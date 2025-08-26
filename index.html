@@ -3,107 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeAI</title>
+    <title>HomeAI - Professional Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #111827; /* A darker base background */
         }
-        /* Custom scrollbar for a cleaner look */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
-        }
-        .prose-styles p { margin-bottom: 1rem; }
+        /* Custom scrollbar for a polished look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        /* Custom styles for markdown rendering */
+        .prose-styles h1, .prose-styles h2, .prose-styles h3 { color: #f3f4f6; }
+        .prose-styles p { margin-bottom: 1rem; line-height: 1.7; }
         .prose-styles ul, .prose-styles ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        .prose-styles li { margin-bottom: 0.25rem; }
+        .prose-styles li { margin-bottom: 0.35rem; }
+        .prose-styles a { color: #818cf8; text-decoration: underline; }
         .prose-styles pre {
-            background-color: #111827;
+            background-color: #0d1117;
             color: #e5e7eb;
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-x: auto;
             margin-bottom: 1rem;
+            border: 1px solid #374151;
+            position: relative;
         }
         .prose-styles code {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            background-color: rgba(165, 180, 252, 0.2);
+            color: #c7d2fe;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
         }
-        .prose-styles h1, .prose-styles h2, .prose-styles h3 { margin-bottom: 1rem; font-weight: 600; }
+        .prose-styles pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4b5563;
+            color: #e5e7eb;
+            border: none;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.8em;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .prose-styles pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background-color: #6b7280; }
+
+        /* Animation for new messages */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-animate {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Blinking cursor for AI response */
+        @keyframes blink { 50% { opacity: 0; } }
+        .blinking-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: #a78bfa;
+            margin-left: 2px;
+            border-radius: 2px;
+            animation: blink 1s step-end infinite;
+        }
+
+        /* Mobile sidebar styles */
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed; top: 0; left: 0; height: 100%; z-index: 50;
+                transform: translateX(-100%);
+            }
+            .sidebar-open { transform: translateX(0); }
+            .main-content { width: 100%; }
+            .overlay {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(0, 0, 0, 0.6); z-index: 40;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-800 text-gray-100 flex h-screen">
+<body class="bg-slate-800 text-gray-200 flex h-screen overflow-hidden">
 
-    <!-- Sidebar for controls -->
-    <aside class="bg-gray-900 w-64 p-4 flex flex-col space-y-6 flex-shrink-0">
-        <h1 class="text-2xl font-bold text-white">HomeAI</h1>
+    <div id="mobile-overlay" class="hidden md:hidden overlay"></div>
 
-        <!-- Input for ngrok URL -->
-        <div>
-            <label for="ngrokUrl" class="block text-sm font-medium text-gray-300 mb-2">Ollama API URL</label>
-            <input type="text" id="ngrokUrl"
-                class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-indigo-500 focus:border-indigo-500"
-                value="https://324dd667dd22.ngrok-free.app">
+    <aside id="sidebar" class="bg-slate-900 w-64 p-5 flex flex-col space-y-6 flex-shrink-0 sidebar border-r border-slate-700">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <h1 class="text-2xl font-bold text-white">HomeAI</h1>
+            </div>
+            <button id="close-sidebar-btn" class="md:hidden text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
 
-        <button id="new-chat-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <button id="new-chat-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105 shadow-lg shadow-indigo-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span class="ml-2">New Chat</span>
         </button>
 
-        <div>
-            <label for="model-select" class="block text-sm font-medium text-gray-300 mb-2">Model</label>
-            <select id="model-select" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="TRUEGPT">TRUEGPT</option>
-                <option value="TRUEGPT-2">TRUEGPT-2</option>
-                <option value="gpt-oss:20b">gpt-oss:20b</option>
-                <option value="mistral" selected>mistral</option>
-                <option value="codellama">codellama</option>
-            </select>
-        </div>
+        <div class="space-y-4 pt-4 border-t border-slate-700/60">
+            <div>
+                <label for="ngrokUrl" class="block text-sm font-medium text-gray-300 mb-2">Ollama API URL</label>
+                <input type="text" id="ngrokUrl"
+                    class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    value="https://324dd667dd22.ngrok-free.app">
+            </div>
 
-        <div class="flex items-center justify-between">
-            <label for="memory-toggle" class="text-sm font-medium text-gray-300">Chat Memory</label>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="memory-toggle" class="sr-only peer" checked>
-                <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+            <div>
+                <label for="model-select" class="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                <select id="model-select" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                    <option value="TRUEGPT" title="PROS: You have to start the prompt. CONS: It isn't smart.">TRUEGPT</option>
+                    <option value="TRUEGPT-2" title="PROS: Same as TRUEGPT. CONS: A little smarter.">TRUEGPT-2</option>
+                    <option value="gpt-oss:20b" title="PROS: Very smart & has thinking. CONS: Takes forever to respond.">gpt-oss:20b</option>
+                    <option value="mistral" selected title="PROS: Exceptionally fast. CONS: Exceptionally dumb.">mistral</option>
+                    <option value="codellama" title="PROS: Meh at coding. CONS: Blegh at everything else.">codellama</option>
+                    <option value="gemma3:4b" title="PROS: Blazing fast for its size. CONS: Surprisingly clever, but still compact.">gemma3:4b</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <label for="memory-toggle" class="text-sm font-medium text-gray-300">Chat Memory</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="memory-toggle" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
         </div>
 
         <div class="flex-grow"></div>
     </aside>
 
-    <!-- Main chat area -->
-    <main class="flex-1 flex flex-col h-screen">
-        <div id="chat-container" class="flex-1 overflow-y-auto p-6">
-            <!-- Welcome Message -->
-            <div id="welcome-message" class="text-center text-gray-400">
-                <h2 class="text-3xl font-bold mb-2">Welcome to HomeAI</h2>
+    <main class="flex-1 flex flex-col h-screen main-content bg-slate-800">
+        <header class="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 p-2 flex items-center md:hidden">
+            <button id="menu-btn" class="text-gray-300 hover:text-white p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h2 class="text-lg font-semibold ml-2">HomeAI</h2>
+        </header>
+        <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-8">
+            <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center text-slate-400">
+                <div class="bg-slate-700/50 p-6 rounded-full mb-6">
+                    <svg class="w-16 h-16 text-indigo-400" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50" fill="currentColor"><path d="M 24.90625 3.96875 C 24.863281 3.976563 24.820313 3.988281 24.78125 4 C 24.316406 4.105469 23.988281 4.523438 24 5 L 24 11 C 23.996094 11.359375 24.183594 11.695313 24.496094 11.878906 C 24.808594 12.058594 25.191406 12.058594 25.503906 11.878906 C 25.816406 11.695313 26.003906 11.359375 26 11 L 26 5 C 26.011719 4.710938 25.894531 4.433594 25.6875 4.238281 C 25.476563 4.039063 25.191406 3.941406 24.90625 3.96875 Z M 10.65625 9.84375 C 10.28125 9.910156 9.980469 10.183594 9.875 10.546875 C 9.769531 10.914063 9.878906 11.304688 10.15625 11.5625 L 14.40625 15.8125 C 14.648438 16.109375 15.035156 16.246094 15.410156 16.160156 C 15.78125 16.074219 16.074219 15.78125 16.160156 15.410156 C 16.246094 15.035156 16.109375 14.648438 15.8125 14.40625 L 11.5625 10.15625 C 11.355469 9.933594 11.054688 9.820313 10.75 9.84375 C 10.71875 9.84375 10.6875 9.84375 10.65625 9.84375 Z M 39.03125 9.84375 C 38.804688 9.875 38.59375 9.988281 38.4375 10.15625 L 34.1875 14.40625 C 33.890625 14.648438 33.753906 15.035156 33.839844 15.410156 C 33.925781 15.78125 34.21875 16.074219 34.589844 16.160156 C 34.964844 16.246094 35.351563 16.109375 35.59375 15.8125 L 39.84375 11.5625 C 40.15625 11.265625 40.246094 10.800781 40.0625 10.410156 C 39.875 10.015625 39.460938 9.789063 39.03125 9.84375 Z M 24.90625 15 C 24.875 15.007813 24.84375 15.019531 24.8125 15.03125 C 24.75 15.035156 24.6875 15.046875 24.625 15.0625 C 24.613281 15.074219 24.605469 15.082031 24.59375 15.09375 C 19.289063 15.320313 15 19.640625 15 25 C 15 30.503906 19.496094 35 25 35 C 30.503906 35 35 30.503906 35 25 C 35 19.660156 30.746094 15.355469 25.46875 15.09375 C 25.433594 15.09375 25.410156 15.0625 25.375 15.0625 C 25.273438 15.023438 25.167969 15.003906 25.0625 15 C 25.042969 15 25.019531 15 25 15 C 24.96875 15 24.9375 15 24.90625 15 Z M 24.9375 17 C 24.957031 17 24.980469 17 25 17 C 25.03125 17 25.0625 17 25.09375 17 C 29.46875 17.050781 33 20.613281 33 25 C 33 29.421875 29.421875 33 25 33 C 20.582031 33 17 29.421875 17 25 C 17 20.601563 20.546875 17.035156 24.9375 17 Z M 4.71875 24 C 4.167969 24.078125 3.78125 24.589844 3.859375 25.140625 C 3.9375 25.691406 4.449219 26.078125 5 26 L 11 26 C 11.359375 26.003906 11.695313 25.816406 11.878906 25.503906 C 12.058594 25.191406 12.058594 24.808594 11.878906 24.496094 C 11.695313 24.183594 11.359375 23.996094 11 24 L 5 24 C 4.96875 24 4.9375 24 4.90625 24 C 4.875 24 4.84375 24 4.8125 24 C 4.78125 24 4.75 24 4.71875 24 Z M 38.71875 24 C 38.167969 24.078125 37.78125 24.589844 37.859375 25.140625 C 37.9375 25.691406 38.449219 26.078125 39 26 L 45 26 C 45.359375 26.003906 45.695313 25.816406 45.878906 25.503906 C 46.058594 25.191406 46.058594 24.808594 45.878906 24.496094 C 45.695313 24.183594 45.359375 23.996094 45 24 L 39 24 C 38.96875 24 38.9375 24 38.90625 24 C 38.875 24 38.84375 24 38.8125 24 C 38.78125 24 38.75 24 38.71875 24 Z M 15 33.875 C 14.773438 33.90625 14.5625 34.019531 14.40625 34.1875 L 10.15625 38.4375 C 9.859375 38.679688 9.722656 39.066406 9.808594 39.441406 C 9.894531 39.8125 10.1875 40.105469 10.558594 40.191406 C 10.933594 40.277344 11.320313 40.140625 11.5625 39.84375 L 15.8125 35.59375 C 16.109375 35.308594 16.199219 34.867188 16.039063 34.488281 C 15.882813 34.109375 15.503906 33.867188 15.09375 33.875 C 15.0625 33.875 15.03125 33.875 15 33.875 Z M 34.6875 33.875 C 34.3125 33.941406 34.011719 34.214844 33.90625 34.578125 C 33.800781 34.945313 33.910156 35.335938 34.1875 35.59375 L 38.4375 39.84375 C 38.679688 40.140625 39.066406 40.277344 39.441406 40.191406 C 39.8125 40.105469 40.105469 39.8125 40.191406 39.441406 C 40.277344 39.066406 40.140625 38.679688 39.84375 38.4375 L 35.59375 34.1875 C 35.40625 33.988281 35.148438 33.878906 34.875 33.875 C 34.84375 33.875 34.8125 33.875 34.78125 33.875 C 34.75 33.875 34.71875 33.875 34.6875 33.875 Z M 24.90625 37.96875 C 24.863281 37.976563 24.820313 37.988281 24.78125 38 C 24.316406 38.105469 23.988281 38.523438 24 39 L 24 45 C 23.996094 45.359375 24.183594 45.695313 24.496094 45.878906 C 24.808594 46.058594 25.191406 46.058594 25.503906 45.878906 C 25.816406 45.695313 26.003906 45.359375 26 45 L 26 39 C 26.011719 38.710938 25.894531 38.433594 25.6875 38.238281 C 25.476563 38.039063 25.191406 37.941406 24.90625 37.96875 Z"></path></svg>
+                </div>
+                <h2 class="text-3xl font-bold mb-2 text-slate-200">Welcome to HomeAI</h2>
                 <p>Select a model and start a conversation.</p>
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
+                    <div class="bg-slate-700/50 p-4 rounded-lg text-left">
+                        <h3 class="font-semibold text-slate-300 mb-1">Explain a concept</h3>
+                        <p class="text-sm">"Explain quantum computing in simple terms"</p>
+                    </div>
+                    <div class="bg-slate-700/50 p-4 rounded-lg text-left">
+                        <h3 class="font-semibold text-slate-300 mb-1">Write some code</h3>
+                        <p class="text-sm">"Write a python script to sort a list"</p>
+                    </div>
+                </div>
             </div>
-            <!-- Chat messages will be appended here -->
         </div>
 
-        <!-- Chat input form -->
-        <div class="p-6 bg-gray-800 border-t border-gray-700">
-            <div class="max-w-3xl mx-auto">
-                <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-200 flex items-center justify-center">
+        <div class="p-6 bg-slate-800/90 backdrop-blur-sm border-t border-slate-700">
+            <div class="max-w-4xl mx-auto">
+                <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
                     <span class="ml-2">Stop Generation</span>
                 </button>
                 <form id="chat-form" class="relative">
-                    <textarea id="chat-input" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-4 pr-20 resize-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Send a message..." rows="1"></textarea>
-                    <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-700 rounded-full text-white disabled:bg-gray-500">
+                    <textarea id="chat-input" class="w-full bg-slate-700 border border-slate-600 text-gray-200 rounded-xl p-4 pr-16 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-xl" placeholder="Send a message..." rows="1"></textarea>
+                    <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-700 rounded-full text-white disabled:bg-slate-500 transition-all transform hover:scale-110 disabled:scale-100 disabled:cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </form>
@@ -113,10 +198,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Configuration ---
-            const ngrokUrlInput = document.getElementById('ngrokUrl');
-
             // --- DOM Elements ---
+            const ngrokUrlInput = document.getElementById('ngrokUrl');
             const chatContainer = document.getElementById('chat-container');
             const chatForm = document.getElementById('chat-form');
             const chatInput = document.getElementById('chat-input');
@@ -125,23 +208,21 @@
             const newChatBtn = document.getElementById('new-chat-btn');
             const stopGenerationBtn = document.getElementById('stop-generation-btn');
             const welcomeMessage = document.getElementById('welcome-message');
+            const sidebar = document.getElementById('sidebar');
+            const menuBtn = document.getElementById('menu-btn');
+            const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+            const mobileOverlay = document.getElementById('mobile-overlay');
 
             // --- State Management ---
             let chatHistory = [];
             let abortController = null;
+            const CHAT_LOG_KEY = 'home_ai_chat_history';
 
             // --- API Functions ---
-
-            /**
-             * Sends a chat message to the Ollama API and handles the streaming response.
-             * @param {string} prompt The user's prompt.
-             * @param {string} model The selected model.
-             * @param {boolean} useMemory Whether to include chat history.
-             */
             async function sendChatMessage(prompt, model, useMemory) {
                 welcomeMessage.classList.add('hidden');
                 addMessageToUI('user', prompt);
-                const aiMessageElement = addMessageToUI('assistant', '');
+                const aiMessageElement = addMessageToUI('assistant', `<span class="blinking-cursor"></span>`);
 
                 setLoadingState(true);
 
@@ -154,20 +235,12 @@
                     
                     const response = await fetch(`${ngrokUrl}/api/chat`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            model: model,
-                            messages: messages,
-                            stream: true,
-                        }),
-                        signal: signal,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model, messages, stream: true }),
+                        signal,
                     });
 
-                    if (!response.ok) {
-                         throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
+                    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
 
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
@@ -185,72 +258,84 @@
                                 const parsed = JSON.parse(line);
                                 if (parsed.message && parsed.message.content) {
                                     fullResponse += parsed.message.content;
-                                    // Use marked to render markdown content
-                                    aiMessageElement.innerHTML = marked.parse(fullResponse);
+                                    aiMessageElement.innerHTML = marked.parse(fullResponse + '<span class="blinking-cursor"></span>');
                                     scrollToBottom();
                                 }
                                 if (parsed.done) {
+                                    updateMessageContent(aiMessageElement, fullResponse);
                                     if (useMemory) {
-                                        // Update history with the complete conversation
                                         chatHistory.push({ role: 'user', content: prompt });
                                         chatHistory.push({ role: 'assistant', content: fullResponse });
+                                        saveChatHistory();
                                     }
                                     setLoadingState(false);
                                     return;
                                 }
-                            } catch (e) {
-                                console.error("Error parsing stream line:", line, e);
-                            }
+                            } catch (e) { console.error("Error parsing stream line:", line, e); }
                         }
                     }
                 } catch (error) {
                     if (error.name === 'AbortError') {
-                        aiMessageElement.innerHTML += '<p class="text-red-400 mt-2">[Generation stopped by user]</p>';
-                        console.log('Fetch aborted by user.');
+                        const content = aiMessageElement.innerHTML.replace('<span class="blinking-cursor"></span>', '');
+                        updateMessageContent(aiMessageElement, content + '<p class="text-red-400 mt-2 text-sm">[Generation stopped by user]</p>');
                     } else {
-                        aiMessageElement.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
-                        console.error('Error sending chat message:', error);
+                        updateMessageContent(aiMessageElement, `<p class="text-red-400">Error: ${error.message}</p>`);
                     }
                 } finally {
+                    const cursor = aiMessageElement.querySelector('.blinking-cursor');
+                    if(cursor) cursor.remove();
                     setLoadingState(false);
                 }
             }
 
             // --- UI Functions ---
+            function createAvatar(role) {
+                const avatar = document.createElement('div');
+                avatar.className = `w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mr-4 shadow-md ${role === 'user' ? 'bg-indigo-500' : 'bg-slate-600'}`;
+                const svg = role === 'user' ? 
+                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-white"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.41-1.412A6.972 6.972 0 0010 11.5c-2.25 0-4.337.894-5.94 2.336a6.973 6.973 0 00-1.065.657z" /></svg>` :
+                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-indigo-300"><path fill-rule="evenodd" d="M11.29 2.234a1 1 0 00-1.022-.217l-4.034 2.017a1 1 0 00-.634.962V10a1 1 0 00.634.962l4.034 2.017a1 1 0 001.022-.217l4.017-4.017a1 1 0 000-1.414l-4.017-4.017zM10 8.364l2.121-2.121 2.121 2.121L10 12.607 5.757 8.364 7.879 6.243 10 8.364zM4.93 12.07a1 1 0 00-1.414 0l-1.28 1.28a1 1 0 000 1.414l4.017 4.017a1 1 0 001.414 0l1.28-1.28a1 1 0 000-1.414l-4.017-4.017z" clip-rule="evenodd" /></svg>`;
+                avatar.innerHTML = svg;
+                return avatar;
+            }
 
-            /**
-             * Adds a message bubble to the chat UI.
-             * @param {string} role 'user' or 'assistant'.
-             * @param {string} content The message content.
-             * @returns {HTMLElement} The content element of the new message.
-             */
             function addMessageToUI(role, content) {
                 const messageWrapper = document.createElement('div');
-                messageWrapper.className = `flex mb-6 ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-
-                const messageBubble = document.createElement('div');
-                messageBubble.className = `max-w-2xl p-4 rounded-lg prose-styles ${role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-200'}`;
+                messageWrapper.className = `flex items-start message-animate`;
                 
-                // Use marked to parse markdown content
+                const avatar = createAvatar(role);
+                const messageBubble = document.createElement('div');
+                const bgColor = role === 'user' ? 'bg-indigo-600' : 'bg-slate-700';
+                messageBubble.className = `max-w-3xl w-full p-4 rounded-lg prose-styles text-white shadow-lg ${bgColor}`;
                 messageBubble.innerHTML = marked.parse(content);
                 
+                messageWrapper.appendChild(avatar);
                 messageWrapper.appendChild(messageBubble);
                 chatContainer.appendChild(messageWrapper);
+                
+                updateMessageContent(messageBubble, content);
                 scrollToBottom();
                 return messageBubble;
             }
 
-            /**
-             * Scrolls the chat container to the bottom.
-             */
-            function scrollToBottom() {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+            function updateMessageContent(element, content) {
+                element.innerHTML = marked.parse(content);
+                element.querySelectorAll('pre code').forEach((block) => {
+                    const pre = block.parentElement;
+                    const copyBtn = document.createElement('button');
+                    copyBtn.innerText = 'Copy';
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(block.innerText);
+                        copyBtn.innerText = 'Copied!';
+                        setTimeout(() => { copyBtn.innerText = 'Copy'; }, 2000);
+                    };
+                    pre.appendChild(copyBtn);
+                });
             }
 
-            /**
-             * Toggles the UI state between loading and idle.
-             * @param {boolean} isLoading True if loading, false otherwise.
-             */
+            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+
             function setLoadingState(isLoading) {
                 chatInput.disabled = isLoading;
                 chatForm.querySelector('button').disabled = isLoading;
@@ -264,37 +349,54 @@
                 }
             }
 
-            /**
-             * Resets the chat interface to its initial state.
-             */
             function startNewChat() {
                 chatContainer.innerHTML = '';
                 chatHistory = [];
+                localStorage.removeItem(CHAT_LOG_KEY);
+                chatContainer.appendChild(welcomeMessage);
                 welcomeMessage.classList.remove('hidden');
-                if (abortController) {
-                    abortController.abort();
-                }
+                if (abortController) abortController.abort();
                 setLoadingState(false);
-                console.log('New chat started.');
             }
             
-            /**
-             * Auto-resize textarea height based on content.
-             */
             function autoResizeTextarea() {
                 chatInput.style.height = 'auto';
-                chatInput.style.height = (chatInput.scrollHeight) + 'px';
+                const newHeight = Math.min(chatInput.scrollHeight, 250);
+                chatInput.style.height = newHeight + 'px';
+            }
+
+            // --- Chat Log Functions ---
+            function saveChatHistory() { localStorage.setItem(CHAT_LOG_KEY, JSON.stringify(chatHistory)); }
+
+            function loadChatHistory() {
+                const savedHistory = localStorage.getItem(CHAT_LOG_KEY);
+                if (savedHistory) {
+                    chatHistory = JSON.parse(savedHistory);
+                    if (chatHistory.length > 0) {
+                        welcomeMessage.classList.add('hidden');
+                        chatContainer.innerHTML = '';
+                        chatHistory.forEach(message => addMessageToUI(message.role, message.content));
+                    }
+                }
+            }
+            
+            // --- Mobile Sidebar ---
+            function toggleSidebar(show) {
+                if (show) {
+                    sidebar.classList.add('sidebar-open');
+                    mobileOverlay.classList.remove('hidden');
+                } else {
+                    sidebar.classList.remove('sidebar-open');
+                    mobileOverlay.classList.add('hidden');
+                }
             }
 
             // --- Event Listeners ---
-
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const prompt = chatInput.value.trim();
-                if (prompt) {
-                    const selectedModel = modelSelect.value;
-                    const useMemory = memoryToggle.checked;
-                    sendChatMessage(prompt, selectedModel, useMemory);
+                if (prompt && !chatInput.disabled) {
+                    sendChatMessage(prompt, modelSelect.value, memoryToggle.checked);
                     chatInput.value = '';
                     autoResizeTextarea();
                 }
@@ -308,17 +410,17 @@
             });
             
             chatInput.addEventListener('input', autoResizeTextarea);
-
             newChatBtn.addEventListener('click', startNewChat);
 
-            stopGenerationBtn.addEventListener('click', () => {
-                if (abortController) {
-                    abortController.abort();
-                }
-            });
+            stopGenerationBtn.addEventListener('click', () => { if (abortController) abortController.abort(); });
+            
+            menuBtn.addEventListener('click', () => toggleSidebar(true));
+            closeSidebarBtn.addEventListener('click', () => toggleSidebar(false));
+            mobileOverlay.addEventListener('click', () => toggleSidebar(false));
 
             // --- Initialization ---
             autoResizeTextarea();
+            loadChatHistory();
         });
     </script>
 </body>
