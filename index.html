@@ -99,6 +99,31 @@
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                 background-color: rgba(0, 0, 0, 0.6); z-index: 40;
             }
+            
+            /* Mobile input area fixes */
+            .input-area {
+                padding: 1rem !important;
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+                position: relative;
+                min-height: auto;
+            }
+            
+            #chat-container {
+                padding-bottom: 140px !important; /* Extra space for input area */
+            }
+            
+            /* Ensure proper viewport height handling */
+            .main-content {
+                height: 100vh;
+                height: 100dvh; /* Use dynamic viewport height if supported */
+            }
+        }
+        
+        /* Safe area handling for notched devices */
+        @supports (padding: max(0px)) {
+            .input-area {
+                padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            }
         }
     </style>
 </head>
@@ -180,7 +205,7 @@
             </div>
         </div>
 
-        <div class="p-6 bg-slate-800/90 backdrop-blur-sm border-t border-slate-700">
+        <div class="input-area p-6 bg-slate-800/90 backdrop-blur-sm border-t border-slate-700">
             <div class="max-w-4xl mx-auto">
                 <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
@@ -217,6 +242,21 @@
             let chatHistory = [];
             let abortController = null;
             const CHAT_LOG_KEY = 'home_ai_chat_history';
+
+            // --- Mobile viewport handling ---
+            function handleViewportChange() {
+                // Force a reflow to handle virtual keyboard on mobile
+                if (window.innerWidth <= 768) {
+                    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+                }
+            }
+
+            // Set initial viewport height
+            handleViewportChange();
+            window.addEventListener('resize', handleViewportChange);
+            window.addEventListener('orientationchange', () => {
+                setTimeout(handleViewportChange, 100);
+            });
 
             // --- API Functions ---
             async function sendChatMessage(prompt, model, useMemory) {
@@ -334,7 +374,9 @@
                 });
             }
 
-            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+            function scrollToBottom() { 
+                chatContainer.scrollTop = chatContainer.scrollHeight; 
+            }
 
             function setLoadingState(isLoading) {
                 chatInput.disabled = isLoading;
@@ -417,6 +459,16 @@
             menuBtn.addEventListener('click', () => toggleSidebar(true));
             closeSidebarBtn.addEventListener('click', () => toggleSidebar(false));
             mobileOverlay.addEventListener('click', () => toggleSidebar(false));
+
+            // --- Mobile input focus handling ---
+            chatInput.addEventListener('focus', () => {
+                if (window.innerWidth <= 768) {
+                    // Small delay to allow virtual keyboard to appear
+                    setTimeout(() => {
+                        chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                }
+            });
 
             // --- Initialization ---
             autoResizeTextarea();
