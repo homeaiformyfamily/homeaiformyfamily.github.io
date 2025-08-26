@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeAI - Kitty Edition</title>
+    <title>HomeAI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +31,8 @@
         .prose-styles h1, .prose-styles h2, .prose-styles h3 { color: var(--text-primary); }
         .prose-styles p { margin-bottom: 1rem; line-height: 1.7; }
         .prose-styles ul, .prose-styles ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        .prose-styles a { color: var(--accent-pink); text-decoration: underline; }
+        .prose-styles a { color: var(--accent-pink); text-decoration: none; }
+        .prose-styles a:hover { text-decoration: underline; }
         .prose-styles pre {
             background-color: #0d1117;
             color: var(--text-primary);
@@ -71,7 +72,12 @@
             from { opacity: 0; transform: translateY(10px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .fade-out { animation: fadeOut 0.4s ease-out forwards; }
 
         @keyframes blink { 50% { opacity: 0; } }
         .blinking-cursor {
@@ -107,9 +113,29 @@
                 transform: translateX(0);
             }
         }
+        
+        /* New Toggle Switch */
+        .toggle-switch-bg:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 9999px;
+            transition: transform 0.2s;
+        }
+        input:checked + .toggle-switch-bg:after {
+            transform: translateX(20px);
+        }
+        input:checked + .toggle-switch-bg {
+            background-color: var(--accent-pink);
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
+    <div id="notification-area" class="absolute top-0 left-1/2 -translate-x-1/2 z-[100] p-4 space-y-2"></div>
     <div id="mobile-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-50"></div>
     <!-- Modal Screens Container -->
     <div id="modal-container">
@@ -137,12 +163,22 @@
 
         <!-- Settings Screen -->
         <div id="settings-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="settings-modal-content">
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-screen" id="settings-modal-content">
                 <h2 class="text-3xl font-bold text-white mb-6 text-center">Settings</h2>
+                
+                <!-- General Settings -->
                 <div>
                     <label for="settingsNgrokUrlInput" class="block text-sm font-medium text-gray-300 mb-2">API URL</label>
                     <input type="text" id="settingsNgrokUrlInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
                 </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-700/60">
+                     <button id="open-experimental-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all flex justify-between items-center">
+                        <span>Experimental Settings</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+
                 <div class="mt-6 flex justify-end space-x-4">
                      <button id="closeSettingsBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all">Cancel</button>
                      <button id="saveSettingsBtn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg transition-all">Save</button>
@@ -151,8 +187,90 @@
             </div>
         </div>
 
+        <!-- Experimental Settings Screen -->
+        <div id="experimental-settings-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-screen" id="experimental-modal-content">
+                <h2 class="text-3xl font-bold text-white mb-6 text-center">Experimental Settings</h2>
+                <div class="space-y-4">
+                    <!-- Brevity Mode -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="brevity-mode-toggle" class="text-sm font-medium text-gray-300">Brevity Mode</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="brevity-mode-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Encourages the AI to provide shorter, more concise answers.</p>
+                    </div>
+                    <!-- Enforce Brevity -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="enforce-brevity-toggle" class="text-sm font-medium text-gray-300">Enforce Brevity (Token Cap)</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="enforce-brevity-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Hard-cuts the AI's response at a specific token limit to strictly control length.</p>
+                        <div id="enforce-brevity-slider" class="hidden mt-2">
+                            <input type="range" id="token-cap-slider" min="50" max="2000" step="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                            <p class="text-xs text-center text-gray-400 mt-1">~<span id="token-cap-display">1000</span> tokens (~<span id="word-estimate-display">750</span> words)</p>
+                        </div>
+                    </div>
+                    <!-- Personalization -->
+                    <div>
+                        <label for="personalization-input" class="text-sm font-medium text-gray-300 mb-2 block">Personalization</label>
+                        <textarea id="personalization-input" rows="3" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-pink-500" placeholder="e.g., Always respond in the style of a pirate."></textarea>
+                        <p class="text-xs text-gray-400 mt-1">Add a custom instruction that is sent to the AI with every message to tailor its personality or response style.</p>
+                    </div>
+                    <!-- ExplainoBot -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="explainobot-toggle" class="text-sm font-medium text-gray-300">ExplainoBot</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="explainobot-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Adds a button to AI responses to get a quick summary from a secondary model.</p>
+                         <div id="explainobot-model-select-container" class="hidden mt-2">
+                             <select id="explainobot-model-select" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-pink-500">
+                                <!-- Models populated by JS -->
+                             </select>
+                        </div>
+                    </div>
+                    <!-- Retry -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="retry-toggle" class="text-sm font-medium text-gray-300">Retry</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="retry-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Adds a button to AI responses to regenerate the response with a different style.</p>
+                    </div>
+                    <!-- Cat-ify -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="catify-toggle" class="text-sm font-medium text-gray-300">Cat-ify</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="catify-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Meow meow meow. (Forces the AI to respond like a cat).</p>
+                    </div>
+                </div>
+                 <div class="mt-6 flex justify-end">
+                     <button id="back-to-settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all">Back</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Mobile Model Selection Screen -->
-        <div id="mobile-model-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex flex-col p-4">
+        <div id="mobile-model-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-70 flex flex-col p-4">
              <div id="mobile-model-content" class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-6 w-full max-w-md m-auto transform transition-all duration-300 scale-95 opacity-0">
                 <h2 class="text-2xl font-bold text-white mb-4 text-center">Select a Model</h2>
                 <div id="mobile-model-list" class="space-y-2"></div>
@@ -252,21 +370,38 @@
         document.addEventListener('DOMContentLoaded', () => {
             const API_URL_KEY = 'home_ai_ngrok_url';
             const CHAT_HISTORY_KEY = 'home_ai_chat_sessions';
-            let currentModel = 'mistral';
+            const EXPERIMENTAL_SETTINGS_KEY = 'home_ai_experimental_settings';
+
+            let currentModel = 'gemma3:4b';
             let chatSessions = [];
             let currentChatId = null;
             let abortController = null;
+            let experimentalSettings = {};
+            let loadingInterval = null;
 
             const models = [
-                { value: 'FREEGPT', name: 'Tinskin', description: 'Continue bot. Write your prompt as if answering one.' },
-                { value: 'FREEGPT-2', name: 'Clanker', description: 'Continue bot. Write your prompt as if answering one.' },
+                { value: 'FREEGPT', name: 'Tinskin', description: 'Continue bot. Write your prompt as if answering one.', disabled: true },
+                { value: 'FREEGPT-2', name: 'Clanker', description: 'Continue bot. Write your prompt as if answering one.', disabled: true },
                 { value: 'mistral', name: 'Mistral', description: "Can't follow complex ideas." },
                 { value: 'codellama', name: 'Bobby', description: 'Can sometimes follow complex ideas, good for coding.' },
                 { value: 'gemma3:4b', name: 'Jerma', description: 'Good all-around bot.' },
-                { value: 'gpt-oss:20b', name: 'Sheldon', description: 'Really smart, really slow.' }
+                { value: 'gpt-oss:20b', name: 'Sheldon', description: 'Really smart, really slow.' },
+                { value: 'llama2-uncensored', name: 'Devon', description: 'Will answer anything, literally.' }
+            ];
+            
+            const loadingMessages = [
+                "Waking up the silicon hamster...",
+                "Reticulating splines...",
+                "Awaiting the computer to stop lagging...",
+                "Consulting the digital oracle...",
+                "Herding bits and bytes...",
+                "Polishing the response to a mirror shine...",
+                "Don't rush the art...",
+                "Compiling witty remarks..."
             ];
 
             // --- DOM Elements ---
+            const notificationArea = document.getElementById('notification-area');
             const apiSetupScreen = document.getElementById('api-setup-screen');
             const apiModalContent = document.getElementById('api-modal-content');
             const ngrokUrlInput = document.getElementById('ngrokUrlInput');
@@ -280,6 +415,11 @@
             const closeSettingsBtn = document.getElementById('closeSettingsBtn');
             const settingsStatusMessage = document.getElementById('settings-status-message');
             const settingsBtn = document.getElementById('settings-btn');
+            
+            const experimentalSettingsScreen = document.getElementById('experimental-settings-screen');
+            const experimentalModalContent = document.getElementById('experimental-modal-content');
+            const openExperimentalBtn = document.getElementById('open-experimental-btn');
+            const backToSettingsBtn = document.getElementById('back-to-settings-btn');
 
             const mobileModelScreen = document.getElementById('mobile-model-screen');
             const mobileModelContent = document.getElementById('mobile-model-content');
@@ -307,7 +447,66 @@
             const closeSidebarBtn = document.getElementById('close-sidebar-btn');
             const mobileOverlay = document.getElementById('mobile-overlay');
 
-            // --- Settings Modal ---
+            // Experimental Settings Elements
+            const brevityModeToggle = document.getElementById('brevity-mode-toggle');
+            const enforceBrevityToggle = document.getElementById('enforce-brevity-toggle');
+            const enforceBrevitySliderContainer = document.getElementById('enforce-brevity-slider');
+            const tokenCapSlider = document.getElementById('token-cap-slider');
+            const tokenCapDisplay = document.getElementById('token-cap-display');
+            const wordEstimateDisplay = document.getElementById('word-estimate-display');
+            const personalizationInput = document.getElementById('personalization-input');
+            const explainobotToggle = document.getElementById('explainobot-toggle');
+            const explainobotModelSelectContainer = document.getElementById('explainobot-model-select-container');
+            const explainobotModelSelect = document.getElementById('explainobot-model-select');
+            const retryToggle = document.getElementById('retry-toggle');
+            const catifyToggle = document.getElementById('catify-toggle');
+
+
+            // --- Settings ---
+            function loadExperimentalSettings() {
+                const savedSettings = localStorage.getItem(EXPERIMENTAL_SETTINGS_KEY);
+                experimentalSettings = savedSettings ? JSON.parse(savedSettings) : {
+                    brevityMode: false,
+                    enforceBrevity: false,
+                    tokenCap: 1000,
+                    personalization: '',
+                    explainobot: false,
+                    explainobotModel: 'default',
+                    retry: false,
+                    catify: false
+                };
+                applyExperimentalSettingsToUI();
+            }
+
+            function saveExperimentalSettings() {
+                // Read from UI into object before saving
+                experimentalSettings.brevityMode = brevityModeToggle.checked;
+                experimentalSettings.enforceBrevity = enforceBrevityToggle.checked;
+                experimentalSettings.tokenCap = parseInt(tokenCapSlider.value);
+                experimentalSettings.personalization = personalizationInput.value;
+                experimentalSettings.explainobot = explainobotToggle.checked;
+                experimentalSettings.explainobotModel = explainobotModelSelect.value;
+                experimentalSettings.retry = retryToggle.checked;
+                experimentalSettings.catify = catifyToggle.checked;
+                localStorage.setItem(EXPERIMENTAL_SETTINGS_KEY, JSON.stringify(experimentalSettings));
+            }
+
+            function applyExperimentalSettingsToUI() {
+                brevityModeToggle.checked = experimentalSettings.brevityMode;
+                enforceBrevityToggle.checked = experimentalSettings.enforceBrevity;
+                tokenCapSlider.value = experimentalSettings.tokenCap;
+                tokenCapDisplay.textContent = experimentalSettings.tokenCap;
+                wordEstimateDisplay.textContent = Math.round(experimentalSettings.tokenCap * 0.75);
+                personalizationInput.value = experimentalSettings.personalization;
+                explainobotToggle.checked = experimentalSettings.explainobot;
+                explainobotModelSelect.value = experimentalSettings.explainobotModel;
+                retryToggle.checked = experimentalSettings.retry;
+                catifyToggle.checked = experimentalSettings.catify;
+
+                enforceBrevitySliderContainer.style.display = experimentalSettings.enforceBrevity ? 'block' : 'none';
+                explainobotModelSelectContainer.style.display = experimentalSettings.explainobot ? 'block' : 'none';
+            }
+            
             function openSettings() {
                 settingsNgrokUrlInput.value = localStorage.getItem(API_URL_KEY) || '';
                 settingsStatusMessage.textContent = '';
@@ -326,17 +525,48 @@
                  }, 300);
             }
 
+            function openExperimentalSettings() {
+                applyExperimentalSettingsToUI();
+                settingsScreen.style.display = 'none';
+                experimentalSettingsScreen.style.display = 'flex';
+                 setTimeout(() => {
+                    experimentalModalContent.style.transform = 'scale(1)';
+                    experimentalModalContent.style.opacity = '1';
+                }, 50);
+            }
+
+            function closeExperimentalSettings() {
+                experimentalModalContent.style.transform = 'scale(0.95)';
+                experimentalModalContent.style.opacity = '0';
+                setTimeout(() => {
+                    experimentalSettingsScreen.style.display = 'none';
+                    settingsScreen.style.display = 'flex';
+                }, 300);
+            }
+
             // --- Custom Dropdown & Model Selection ---
             function populateModelDropdowns() {
                 dropdownOptions.innerHTML = '';
                 mobileModelList.innerHTML = '';
+                explainobotModelSelect.innerHTML = '';
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'default';
+                defaultOption.textContent = 'Default (Use Current Model)';
+                explainobotModelSelect.appendChild(defaultOption);
+
                 models.forEach(model => {
                     // Desktop
                     const option = document.createElement('button');
-                    option.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
+                    option.className = `w-full text-left px-3 py-2 text-sm rounded-md ${model.disabled ? 'text-gray-500' : 'text-gray-300 hover:bg-pink-600/50'}`;
                     option.textContent = model.name;
                     option.dataset.value = model.value;
+                    
                     option.addEventListener('click', () => {
+                        if (model.disabled) {
+                            showNotification("This model is under maintenance right now, apologies!");
+                            return;
+                        }
                         currentModel = model.value;
                         updateCurrentModelDisplay();
                         closeDropdown();
@@ -345,15 +575,28 @@
 
                     // Mobile
                     const mobileOption = document.createElement('button');
-                    mobileOption.className = 'w-full text-left p-4 text-lg text-gray-200 hover:bg-pink-600/50 rounded-lg';
+                    mobileOption.className = `w-full text-left p-4 text-lg rounded-lg ${model.disabled ? 'text-gray-500' : 'text-gray-200 hover:bg-pink-600/50'}`;
                     mobileOption.textContent = model.name;
                     mobileOption.dataset.value = model.value;
+                    
                     mobileOption.addEventListener('click', () => {
+                        if (model.disabled) {
+                            showNotification("This model is under maintenance right now, apologies!");
+                            return;
+                        }
                         currentModel = model.value;
                         updateCurrentModelDisplay();
                         closeMobileModelSelector();
                     });
                     mobileModelList.appendChild(mobileOption);
+                    
+                    // ExplainoBot Select
+                    if (!model.disabled) {
+                        const explainoOption = document.createElement('option');
+                        explainoOption.value = model.value;
+                        explainoOption.textContent = model.name;
+                        explainobotModelSelect.appendChild(explainoOption);
+                    }
                 });
             }
 
@@ -405,6 +648,7 @@
 
             async function initializeApp() {
                 populateModelDropdowns();
+                loadExperimentalSettings();
                 loadChatSessions();
                 renderChatHistory();
 
@@ -486,7 +730,7 @@
                 chatContainer.innerHTML = '';
                 if (session.messages.length > 0) {
                     welcomeMessage.classList.add('hidden');
-                    session.messages.forEach(msg => addMessageToUI(msg.role, msg.content, false));
+                    session.messages.forEach((msg, index) => addMessageToUI(msg.role, msg.content, false, index));
                 } else {
                     chatContainer.appendChild(welcomeMessage);
                     welcomeMessage.classList.remove('hidden');
@@ -512,32 +756,16 @@
             }
 
             // --- Chat Functions ---
-            async function sendChatMessage(prompt, modelValue) {
-                let currentSession = chatSessions.find(s => s.id === currentChatId);
-                if (!currentSession) return;
-
-                if (currentSession.messages.length === 0) {
-                    currentSession.title = prompt.substring(0, 30) + (prompt.length > 30 ? '...' : '');
-                }
-
-                currentSession.messages.push({ role: 'user', content: prompt });
-                saveChatSessions();
-                renderChatHistory();
+            async function streamResponse(prompt, modelValue, targetElement) {
+                let messages = [{ role: 'user', content: prompt }];
                 
-                welcomeMessage.classList.add('hidden');
-                addMessageToUI('user', prompt);
-                const aiMessageElement = addMessageToUI('assistant', `<span class="blinking-cursor"></span>`);
-
-                setLoadingState(true);
                 abortController = new AbortController();
-
                 try {
                     const ngrokUrl = localStorage.getItem(API_URL_KEY);
-                    
                     const response = await fetch(`${ngrokUrl}/api/chat`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ model: modelValue, messages: currentSession.messages, stream: true }),
+                        body: JSON.stringify({ model: modelValue, messages, stream: true }),
                         signal: abortController.signal,
                     });
 
@@ -559,31 +787,66 @@
                                 const parsed = JSON.parse(line);
                                 if (parsed.message && parsed.message.content) {
                                     fullResponse += parsed.message.content;
-                                    aiMessageElement.innerHTML = marked.parse(fullResponse + '<span class="blinking-cursor"></span>');
+                                    targetElement.innerHTML = marked.parse(fullResponse + '<span class="blinking-cursor"></span>');
                                     scrollToBottom();
-                                }
-                                if (parsed.done) {
-                                    updateMessageContent(aiMessageElement, fullResponse);
-                                    currentSession.messages.push({ role: 'assistant', content: fullResponse });
-                                    saveChatSessions();
-                                    setLoadingState(false);
-                                    return;
                                 }
                             } catch (e) { console.error("Stream parse error:", line, e); }
                         }
                     }
+                    targetElement.innerHTML = marked.parse(fullResponse);
+                    return fullResponse;
                 } catch (error) {
-                    if (error.name === 'AbortError') {
-                        const content = aiMessageElement.innerHTML.replace('<span class="blinking-cursor"></span>', '');
-                        updateMessageContent(aiMessageElement, content + '<p class="text-red-400 mt-2 text-sm">[Stopped by user]</p>');
-                    } else {
-                        updateMessageContent(aiMessageElement, `<p class="text-red-400">Error: ${error.message}</p>`);
-                    }
+                     targetElement.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                     return null;
                 } finally {
-                    const cursor = aiMessageElement.querySelector('.blinking-cursor');
+                    const cursor = targetElement.querySelector('.blinking-cursor');
                     if(cursor) cursor.remove();
-                    setLoadingState(false);
                 }
+            }
+            
+            async function sendChatMessage(prompt, modelValue, isRetry = false) {
+                let currentSession = chatSessions.find(s => s.id === currentChatId);
+                if (!currentSession) return;
+                
+                const isFirstMessage = currentSession.messages.length === 0;
+
+                if (isRetry) {
+                    currentSession.messages.pop(); // Remove last AI response
+                }
+                currentSession.messages.push({ role: 'user', content: prompt });
+                
+                let messagesToApi = [...currentSession.messages];
+                if (experimentalSettings.brevityMode) messagesToApi.unshift({ role: 'system', content: 'Please be brief in your response.' });
+                if (experimentalSettings.personalization) messagesToApi.unshift({ role: 'system', content: experimentalSettings.personalization });
+                if (experimentalSettings.catify) messagesToApi.unshift({ role: 'system', content: 'Respond like a cat. Include meows and purrs.' });
+
+                saveChatSessions();
+                renderChatHistory();
+                welcomeMessage.classList.add('hidden');
+                
+                if (!isRetry) {
+                    addMessageToUI('user', prompt, true, currentSession.messages.length - 1);
+                }
+
+                const aiMessageElement = addMessageToUI('assistant', ``, true, currentSession.messages.length);
+                
+                setLoadingState(true);
+                const finalResponseText = await streamResponse(JSON.stringify(messagesToApi), modelValue, aiMessageElement.querySelector('.prose-styles'));
+                setLoadingState(false);
+                
+                if (finalResponseText) {
+                    currentSession.messages.push({ role: 'assistant', content: finalResponseText });
+                }
+
+                if (isFirstMessage) {
+                    const titlePrompt = `Based on the following prompt, create a very short, concise title for this conversation (less than 5 words): "${prompt}"`;
+                    const title = await streamResponse(titlePrompt, modelValue, document.createElement('div')); // Dummy element
+                    if (title) {
+                        currentSession.title = title.replace(/"/g, ''); // Remove quotes
+                        renderChatHistory();
+                    }
+                }
+                saveChatSessions();
             }
 
             // --- UI Functions ---
@@ -606,27 +869,35 @@
                 renderChatHistory();
             }
 
-            function addMessageToUI(role, content, animate = true) {
+            function addMessageToUI(role, content, animate = true, index) {
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `flex items-start ${animate ? 'fade-in' : ''}`;
+                if (role === 'user') {
+                    messageWrapper.classList.add('justify-end', 'flex-row-reverse');
+                }
                 
                 const avatar = createAvatar(role);
                 const messageBubble = document.createElement('div');
                 const bgColor = role === 'user' ? 'bg-pink-600/30' : 'bg-gray-700/50';
-                messageBubble.className = `max-w-3xl w-full p-4 rounded-lg prose-styles text-white shadow-lg ${bgColor}`;
+                messageBubble.className = `max-w-3xl w-full p-4 rounded-lg shadow-lg ${bgColor} relative`;
+                
+                const proseContainer = document.createElement('div');
+                proseContainer.className = 'prose-styles text-white';
+                messageBubble.appendChild(proseContainer);
                 
                 messageWrapper.appendChild(avatar);
                 messageWrapper.appendChild(messageBubble);
                 chatContainer.appendChild(messageWrapper);
                 
-                updateMessageContent(messageBubble, content);
+                updateMessageContent(messageBubble, content, index);
                 scrollToBottom();
                 return messageBubble;
             }
 
             function createAvatar(role) {
                 const avatar = document.createElement('div');
-                avatar.className = `w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mr-4 shadow-md ${role === 'user' ? 'bg-pink-600' : 'bg-gray-600'}`;
+                const marginClass = role === 'user' ? 'ml-4' : 'mr-4';
+                avatar.className = `w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-md ${role === 'user' ? 'bg-pink-600' : 'bg-gray-600'} ${marginClass}`;
                 const svg = role === 'user' ?
                     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-white"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.41-1.412A6.972 6.972 0 0010 11.5c-2.25 0-4.337.894-5.94 2.336a6.973 6.973 0 00-1.065.657z" /></svg>` :
                     `<div class="w-5 h-5 text-pink-300"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.60601 5.5625C10.3721 5.5625 10.5197 5.40636 12 5.40636C13.4804 5.40636 13.6279 5.5625 14.394 5.5625C15.0324 5.5625 16.9477 4.00011 17.9053 4.00011C18.8629 4.00011 19.9801 4.56261 19.9801 6.18761V8.0625C19.9781 8.55469 19.7993 10.0634 19.0993 9.66022C20.2113 10.9744 19.98 12.5815 19.9801 14C19.9801 17.9062 14.7132 19 12 19C9.28677 19 4.01994 17.9062 4.01994 14C4.01995 12.5815 3.78875 10.9744 4.90066 9.66022C4.20072 10.0634 4.02188 8.55469 4.01995 8.0625V6.1875C4.01995 4.5625 5.13715 4 6.09476 4C7.05236 4 8.9676 5.5625 9.60601 5.5625Z" /></svg></div>`;
@@ -634,9 +905,12 @@
                 return avatar;
             }
 
-            function updateMessageContent(element, content) {
-                element.innerHTML = marked.parse(content);
-                element.querySelectorAll('pre').forEach((pre) => {
+            function updateMessageContent(element, content, index) {
+                const proseContainer = element.querySelector('.prose-styles');
+                if (!proseContainer) return;
+
+                proseContainer.innerHTML = marked.parse(content);
+                proseContainer.querySelectorAll('pre').forEach((pre) => {
                     const code = pre.querySelector('code');
                     if (!code) return;
                     const copyBtn = document.createElement('button');
@@ -649,6 +923,129 @@
                     };
                     pre.appendChild(copyBtn);
                 });
+                
+                const isAssistantMessage = element.closest('.flex').querySelector('.bg-gray-600');
+
+                if (experimentalSettings.retry && isAssistantMessage) {
+                    const retryContainer = document.createElement('div');
+                    retryContainer.className = 'relative mt-2 text-right';
+
+                    const retryBtn = document.createElement('button');
+                    retryBtn.className = 'bg-gray-800/50 text-xs text-gray-300 px-2 py-1 rounded-md hover:bg-gray-700/50';
+                    retryBtn.textContent = 'Retry';
+
+                    const retryDropdown = document.createElement('div');
+                    retryDropdown.className = 'hidden absolute bottom-full right-0 mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1';
+
+                    const retryOptions = [
+                        { text: 'No changes', modifier: '' },
+                        { text: '...longer', modifier: ' Make the response longer.' },
+                        { text: '...shorter', modifier: ' Make the response shorter.' },
+                        { text: '...less serious', modifier: ' Make the response less serious.' },
+                        { text: '...more serious', modifier: ' Make the response more serious.' },
+                        { text: '...custom', modifier: 'custom' }
+                    ];
+
+                    retryOptions.forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
+                        btn.textContent = opt.text;
+                        btn.onclick = () => {
+                            const userPrompt = chatSessions.find(s => s.id === currentChatId).messages[index - 1].content;
+                            let modifiedPrompt = userPrompt + opt.modifier;
+                            if (opt.modifier === 'custom') {
+                                const customInput = prompt("Enter custom retry instruction:");
+                                if (customInput) {
+                                    modifiedPrompt = `${userPrompt} ${customInput}`;
+                                } else {
+                                    return;
+                                }
+                            }
+                            element.parentElement.remove(); // Remove old AI response
+                            sendChatMessage(modifiedPrompt, currentModel, true);
+                            retryDropdown.classList.add('hidden');
+                        };
+                        retryDropdown.appendChild(btn);
+                    });
+
+                    retryBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        retryDropdown.classList.toggle('hidden');
+                    };
+
+                    retryContainer.appendChild(retryBtn);
+                    retryContainer.appendChild(retryDropdown);
+                    element.appendChild(retryContainer);
+                }
+
+                if (experimentalSettings.explainobot && isAssistantMessage) {
+                    const explainoContainer = document.createElement('div');
+                    explainoContainer.className = 'relative mt-2';
+                    
+                    const explainoBtn = document.createElement('button');
+                    explainoBtn.className = 'bg-gray-800/50 text-xs text-gray-300 px-2 py-1 rounded-md hover:bg-gray-700/50';
+                    explainoBtn.textContent = 'Explain';
+                    
+                    const explainoDropdown = document.createElement('div');
+                    explainoDropdown.className = 'hidden absolute bottom-full left-0 mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1';
+                    
+                    const explainOptions = [
+                        { text: '...in one sentence', prompt: 'Explain the following in one sentence: '},
+                        { text: '...briefly', prompt: 'Explain the following briefly: '},
+                        { text: '...in more depth', prompt: 'Explain the following in more depth: '},
+                        { text: '...thoroughly', prompt: 'Explain the following thoroughly: '}
+                    ];
+
+                    explainOptions.forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
+                        btn.textContent = opt.text;
+                        btn.onclick = () => {
+                            const originalContent = proseContainer.innerText;
+                            const explainoPrompt = `${opt.prompt} "${originalContent}"`;
+                            
+                            let explainoResponseContainer = element.querySelector('.explaino-response');
+                            if (!explainoResponseContainer) {
+                                explainoResponseContainer = document.createElement('div');
+                                explainoResponseContainer.className = 'explaino-response mt-4 pt-3 border-t border-pink-500/30';
+                                element.appendChild(explainoResponseContainer);
+                            }
+                            
+                            explainoResponseContainer.innerHTML = ''; // Clear previous explanation
+                            const title = document.createElement('p');
+                            title.className = 'text-sm font-bold text-pink-400 mb-2';
+                            title.textContent = 'ExplainoBot';
+                            explainoResponseContainer.appendChild(title);
+                            
+                            const contentTarget = document.createElement('div');
+                            contentTarget.innerHTML = `<span class="blinking-cursor"></span>`;
+                            explainoResponseContainer.appendChild(contentTarget);
+                            
+                            const explainoModel = experimentalSettings.explainobotModel === 'default' ? currentModel : experimentalSettings.explainobotModel;
+                            streamResponse(explainoPrompt, explainoModel, contentTarget).then(() => {
+                                const reExplainBtn = document.createElement('button');
+                                reExplainBtn.className = 'bg-gray-800/50 text-xs text-gray-300 px-2 py-1 rounded-md hover:bg-gray-700/50 mt-2';
+                                reExplainBtn.textContent = 'Re-Explain';
+                                reExplainBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    explainoDropdown.classList.toggle('hidden');
+                                };
+                                explainoResponseContainer.appendChild(reExplainBtn);
+                            });
+                            explainoDropdown.classList.add('hidden');
+                        };
+                        explainoDropdown.appendChild(btn);
+                    });
+
+                    explainoBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        explainoDropdown.classList.toggle('hidden');
+                    };
+
+                    explainoContainer.appendChild(explainoBtn);
+                    explainoContainer.appendChild(explainoDropdown);
+                    element.appendChild(explainoContainer);
+                }
             }
 
             function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
@@ -658,8 +1055,14 @@
                 chatForm.querySelector('button').disabled = isLoading;
                 if (isLoading) {
                     stopGenerationBtn.classList.remove('hidden');
-                    chatInput.placeholder = "Generating response...";
+                    let messageIndex = 0;
+                    chatInput.placeholder = loadingMessages[messageIndex];
+                    loadingInterval = setInterval(() => {
+                        messageIndex = (messageIndex + 1) % loadingMessages.length;
+                        chatInput.placeholder = loadingMessages[messageIndex];
+                    }, 2000);
                 } else {
+                    clearInterval(loadingInterval);
                     stopGenerationBtn.classList.add('hidden');
                     chatInput.placeholder = "Send a message...";
                     chatInput.focus();
@@ -691,6 +1094,17 @@
                     mobileOverlay.classList.add('hidden');
                 }
             }
+            
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'bg-pink-600 text-white text-sm font-bold px-4 py-3 rounded-md shadow-lg fade-in';
+                notification.textContent = message;
+                notificationArea.appendChild(notification);
+                setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    notification.addEventListener('animationend', () => notification.remove());
+                }, 3000);
+            }
 
             // --- Event Listeners ---
             menuBtn.addEventListener('click', () => toggleSidebar(true));
@@ -705,6 +1119,8 @@
                 const isValid = await checkApiUrl(url);
                 if (isValid) {
                     localStorage.setItem(API_URL_KEY, url);
+                    saveExperimentalSettings();
+
                     settingsStatusMessage.textContent = 'Saved successfully!';
                     setTimeout(closeSettings, 1500);
                 } else {
@@ -712,6 +1128,9 @@
                     settingsStatusMessage.textContent = 'Connection failed. Please check the URL.';
                 }
             });
+
+            openExperimentalBtn.addEventListener('click', openExperimentalSettings);
+            backToSettingsBtn.addEventListener('click', closeExperimentalSettings);
             
             dropdownButton.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -733,6 +1152,11 @@
                 if (e.target === mobileModelScreen) {
                     closeMobileModelSelector();
                 }
+                 document.querySelectorAll('.explaino-dropdown, .retry-dropdown').forEach(d => {
+                    if (!d.parentElement.contains(e.target)) {
+                        d.classList.add('hidden');
+                    }
+                });
             });
 
             saveApiUrlBtn.addEventListener('click', async () => {
@@ -777,6 +1201,18 @@
             newChatBtn.addEventListener('click', startNewChat);
             stopGenerationBtn.addEventListener('click', () => { if (abortController) abortController.abort(); });
             
+            // Experimental Settings Listeners
+            enforceBrevityToggle.addEventListener('change', () => {
+                enforceBrevitySliderContainer.style.display = enforceBrevityToggle.checked ? 'block' : 'none';
+            });
+            tokenCapSlider.addEventListener('input', () => {
+                tokenCapDisplay.textContent = tokenCapSlider.value;
+                wordEstimateDisplay.textContent = Math.round(tokenCapSlider.value * 0.75);
+            });
+            explainobotToggle.addEventListener('change', () => {
+                explainobotModelSelectContainer.style.display = explainobotToggle.checked ? 'block' : 'none';
+            });
+
             // --- Init ---
             initializeApp();
             autoResizeTextarea();
