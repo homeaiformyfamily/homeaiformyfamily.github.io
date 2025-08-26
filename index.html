@@ -3,284 +3,545 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeAI - Professional Interface</title>
+    <title>HomeAI - Kitty Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #1A1A1A;
+            --bg-med: #2C2C2C;
+            --bg-light: #3D3D3D;
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0A0;
+            --accent-pink: #FF4790;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111827; /* A darker base background */
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
         }
-        /* Custom scrollbar for a polished look */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
-        /* Custom styles for markdown rendering */
-        .prose-styles h1, .prose-styles h2, .prose-styles h3 { color: #f3f4f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-med); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .prose-styles h1, .prose-styles h2, .prose-styles h3 { color: var(--text-primary); }
         .prose-styles p { margin-bottom: 1rem; line-height: 1.7; }
         .prose-styles ul, .prose-styles ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        .prose-styles li { margin-bottom: 0.35rem; }
-        .prose-styles a { color: #818cf8; text-decoration: underline; }
+        .prose-styles a { color: var(--accent-pink); text-decoration: underline; }
         .prose-styles pre {
             background-color: #0d1117;
-            color: #e5e7eb;
+            color: var(--text-primary);
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-x: auto;
-            margin-bottom: 1rem;
-            border: 1px solid #374151;
             position: relative;
         }
         .prose-styles code {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-            background-color: rgba(165, 180, 252, 0.2);
-            color: #c7d2fe;
+            background-color: rgba(255, 71, 144, 0.1);
+            color: var(--accent-pink);
             padding: 0.2rem 0.4rem;
             border-radius: 0.25rem;
             font-size: 0.9em;
         }
-        .prose-styles pre code {
-            background-color: transparent;
-            padding: 0;
-            color: inherit;
-        }
+        .prose-styles pre code { background-color: transparent; padding: 0; color: inherit; }
+
         .copy-btn {
             position: absolute;
             top: 0.5rem;
             right: 0.5rem;
-            background-color: #4b5563;
-            color: #e5e7eb;
+            background-color: var(--bg-light);
+            color: var(--text-primary);
             border: none;
             padding: 0.25rem 0.6rem;
             border-radius: 0.25rem;
             font-size: 0.8em;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s, background-color 0.2s;
         }
         .prose-styles pre:hover .copy-btn { opacity: 1; }
-        .copy-btn:hover { background-color: #6b7280; }
+        .copy-btn:hover { background-color: var(--accent-pink); }
 
-        /* Animation for new messages */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .message-animate {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
-        /* Blinking cursor for AI response */
         @keyframes blink { 50% { opacity: 0; } }
         .blinking-cursor {
             display: inline-block;
             width: 8px;
             height: 1.2em;
-            background-color: #a78bfa;
+            background-color: var(--accent-pink);
             margin-left: 2px;
             border-radius: 2px;
             animation: blink 1s step-end infinite;
         }
+        
+        /* Custom Dropdown */
+        .custom-dropdown-options {
+            transition: opacity 0.2s, transform 0.2s;
+            transform-origin: top;
+        }
 
-        /* Mobile sidebar styles */
-        .sidebar { transition: transform 0.3s ease-in-out; }
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed; top: 0; left: 0; height: 100%; z-index: 50;
+        /* Mobile Sidebar */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 767px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                z-index: 60;
                 transform: translateX(-100%);
             }
-            .sidebar-open { transform: translateX(0); }
-            .main-content { width: 100%; }
-            .overlay {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background-color: rgba(0, 0, 0, 0.6); z-index: 40;
-            }
-            
-            /* Mobile input area fixes */
-            .input-area {
-                padding: 1rem !important;
-                padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
-                position: relative;
-                min-height: auto;
-            }
-            
-            #chat-container {
-                padding-bottom: 140px !important; /* Extra space for input area */
-            }
-            
-            /* Ensure proper viewport height handling */
-            .main-content {
-                height: 100vh;
-                height: 100dvh; /* Use dynamic viewport height if supported */
-            }
-        }
-        
-        /* Safe area handling for notched devices */
-        @supports (padding: max(0px)) {
-            .input-area {
-                padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            #sidebar.open {
+                transform: translateX(0);
             }
         }
     </style>
 </head>
-<body class="bg-slate-800 text-gray-200 flex h-screen overflow-hidden">
-
-    <div id="mobile-overlay" class="hidden md:hidden overlay"></div>
-
-    <aside id="sidebar" class="bg-slate-900 w-64 p-5 flex flex-col space-y-6 flex-shrink-0 sidebar border-r border-slate-700">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <h1 class="text-2xl font-bold text-white">HomeAI</h1>
-            </div>
-            <button id="close-sidebar-btn" class="md:hidden text-gray-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-
-        <button id="new-chat-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105 shadow-lg shadow-indigo-500/20">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span class="ml-2">New Chat</span>
-        </button>
-
-        <div class="space-y-4 pt-4 border-t border-slate-700/60">
-            <div>
-                <label for="ngrokUrl" class="block text-sm font-medium text-gray-300 mb-2">Ollama API URL</label>
-                <input type="text" id="ngrokUrl"
-                    class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    value="https://324dd667dd22.ngrok-free.app">
-            </div>
-
-            <div>
-                <label for="model-select" class="block text-sm font-medium text-gray-300 mb-2">Model</label>
-                <select id="model-select" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
-                    <option value="TRUEGPT" title="PROS: You have to start the prompt. CONS: It isn't smart.">TRUEGPT</option>
-                    <option value="TRUEGPT-2" title="PROS: Same as TRUEGPT. CONS: A little smarter.">TRUEGPT-2</option>
-                    <option value="gpt-oss:20b" title="PROS: Very smart & has thinking. CONS: Takes forever to respond.">gpt-oss:20b</option>
-                    <option value="mistral" selected title="PROS: Exceptionally fast. CONS: Exceptionally dumb.">mistral</option>
-                    <option value="codellama" title="PROS: Meh at coding. CONS: Blegh at everything else.">codellama</option>
-                    <option value="gemma3:4b" title="PROS: Blazing fast for its size. CONS: Surprisingly clever, but still compact.">gemma3:4b</option>
-                </select>
-            </div>
-
-            <div class="flex items-center justify-between pt-2">
-                <label for="memory-toggle" class="text-sm font-medium text-gray-300">Chat Memory</label>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="memory-toggle" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
-            </div>
-        </div>
-
-        <div class="flex-grow"></div>
-    </aside>
-
-    <main class="flex-1 flex flex-col h-screen main-content bg-slate-800">
-        <header class="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 p-2 flex items-center md:hidden">
-            <button id="menu-btn" class="text-gray-300 hover:text-white p-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <h2 class="text-lg font-semibold ml-2">HomeAI</h2>
-        </header>
-        <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-8">
-            <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center text-slate-400">
-                <div class="bg-slate-700/50 p-6 rounded-full mb-6">
-                    <svg class="w-16 h-16 text-indigo-400" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 50 50" fill="currentColor"><path d="M 24.90625 3.96875 C 24.863281 3.976563 24.820313 3.988281 24.78125 4 C 24.316406 4.105469 23.988281 4.523438 24 5 L 24 11 C 23.996094 11.359375 24.183594 11.695313 24.496094 11.878906 C 24.808594 12.058594 25.191406 12.058594 25.503906 11.878906 C 25.816406 11.695313 26.003906 11.359375 26 11 L 26 5 C 26.011719 4.710938 25.894531 4.433594 25.6875 4.238281 C 25.476563 4.039063 25.191406 3.941406 24.90625 3.96875 Z M 10.65625 9.84375 C 10.28125 9.910156 9.980469 10.183594 9.875 10.546875 C 9.769531 10.914063 9.878906 11.304688 10.15625 11.5625 L 14.40625 15.8125 C 14.648438 16.109375 15.035156 16.246094 15.410156 16.160156 C 15.78125 16.074219 16.074219 15.78125 16.160156 15.410156 C 16.246094 15.035156 16.109375 14.648438 15.8125 14.40625 L 11.5625 10.15625 C 11.355469 9.933594 11.054688 9.820313 10.75 9.84375 C 10.71875 9.84375 10.6875 9.84375 10.65625 9.84375 Z M 39.03125 9.84375 C 38.804688 9.875 38.59375 9.988281 38.4375 10.15625 L 34.1875 14.40625 C 33.890625 14.648438 33.753906 15.035156 33.839844 15.410156 C 33.925781 15.78125 34.21875 16.074219 34.589844 16.160156 C 34.964844 16.246094 35.351563 16.109375 35.59375 15.8125 L 39.84375 11.5625 C 40.15625 11.265625 40.246094 10.800781 40.0625 10.410156 C 39.875 10.015625 39.460938 9.789063 39.03125 9.84375 Z M 24.90625 15 C 24.875 15.007813 24.84375 15.019531 24.8125 15.03125 C 24.75 15.035156 24.6875 15.046875 24.625 15.0625 C 24.613281 15.074219 24.605469 15.082031 24.59375 15.09375 C 19.289063 15.320313 15 19.640625 15 25 C 15 30.503906 19.496094 35 25 35 C 30.503906 35 35 30.503906 35 25 C 35 19.660156 30.746094 15.355469 25.46875 15.09375 C 25.433594 15.09375 25.410156 15.0625 25.375 15.0625 C 25.273438 15.023438 25.167969 15.003906 25.0625 15 C 25.042969 15 25.019531 15 25 15 C 24.96875 15 24.9375 15 24.90625 15 Z M 24.9375 17 C 24.957031 17 24.980469 17 25 17 C 25.03125 17 25.0625 17 25.09375 17 C 29.46875 17.050781 33 20.613281 33 25 C 33 29.421875 29.421875 33 25 33 C 20.582031 33 17 29.421875 17 25 C 17 20.601563 20.546875 17.035156 24.9375 17 Z M 4.71875 24 C 4.167969 24.078125 3.78125 24.589844 3.859375 25.140625 C 3.9375 25.691406 4.449219 26.078125 5 26 L 11 26 C 11.359375 26.003906 11.695313 25.816406 11.878906 25.503906 C 12.058594 25.191406 12.058594 24.808594 11.878906 24.496094 C 11.695313 24.183594 11.359375 23.996094 11 24 L 5 24 C 4.96875 24 4.9375 24 4.90625 24 C 4.875 24 4.84375 24 4.8125 24 C 4.78125 24 4.75 24 4.71875 24 Z M 38.71875 24 C 38.167969 24.078125 37.78125 24.589844 37.859375 25.140625 C 37.9375 25.691406 38.449219 26.078125 39 26 L 45 26 C 45.359375 26.003906 45.695313 25.816406 45.878906 25.503906 C 46.058594 25.191406 46.058594 24.808594 45.878906 24.496094 C 45.695313 24.183594 45.359375 23.996094 45 24 L 39 24 C 38.96875 24 38.9375 24 38.90625 24 C 38.875 24 38.84375 24 38.8125 24 C 38.78125 24 38.75 24 38.71875 24 Z M 15 33.875 C 14.773438 33.90625 14.5625 34.019531 14.40625 34.1875 L 10.15625 38.4375 C 9.859375 38.679688 9.722656 39.066406 9.808594 39.441406 C 9.894531 39.8125 10.1875 40.105469 10.558594 40.191406 C 10.933594 40.277344 11.320313 40.140625 11.5625 39.84375 L 15.8125 35.59375 C 16.109375 35.308594 16.199219 34.867188 16.039063 34.488281 C 15.882813 34.109375 15.503906 33.867188 15.09375 33.875 C 15.0625 33.875 15.03125 33.875 15 33.875 Z M 34.6875 33.875 C 34.3125 33.941406 34.011719 34.214844 33.90625 34.578125 C 33.800781 34.945313 33.910156 35.335938 34.1875 35.59375 L 38.4375 39.84375 C 38.679688 40.140625 39.066406 40.277344 39.441406 40.191406 C 39.8125 40.105469 40.105469 39.8125 40.191406 39.441406 C 40.277344 39.066406 40.140625 38.679688 39.84375 38.4375 L 35.59375 34.1875 C 35.40625 33.988281 35.148438 33.878906 34.875 33.875 C 34.84375 33.875 34.8125 33.875 34.78125 33.875 C 34.75 33.875 34.71875 33.875 34.6875 33.875 Z M 24.90625 37.96875 C 24.863281 37.976563 24.820313 37.988281 24.78125 38 C 24.316406 38.105469 23.988281 38.523438 24 39 L 24 45 C 23.996094 45.359375 24.183594 45.695313 24.496094 45.878906 C 24.808594 46.058594 25.191406 46.058594 25.503906 45.878906 C 25.816406 45.695313 26.003906 45.359375 26 45 L 26 39 C 26.011719 38.710938 25.894531 38.433594 25.6875 38.238281 C 25.476563 38.039063 25.191406 37.941406 24.90625 37.96875 Z"></path></svg>
+<body class="flex h-screen overflow-hidden">
+    <div id="mobile-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-50"></div>
+    <!-- Modal Screens Container -->
+    <div id="modal-container">
+        <!-- API Setup Screen -->
+        <div id="api-setup-screen" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-md text-center transform transition-all duration-300 scale-95 opacity-0" id="api-modal-content">
+                 <div class="mx-auto w-16 h-16 mb-4 text-pink-400">
+                    <svg viewBox="0 0 37 32" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <path fill="#FF4790" d="M18.5,26.908c-1.383,0-2.508,1.127-2.508,2.513c0,1.386,1.125,2.514,2.508,2.514s2.508-1.127,2.508-2.514   C21.008,28.036,19.883,26.908,18.5,26.908z M18.5,30.935c-0.832,0-1.508-0.679-1.508-1.514s0.676-1.513,1.508-1.513   s1.508,0.679,1.508,1.513S19.332,30.935,18.5,30.935z"/>
+                            <path fill="#FF4790" d="M18.5,8.7c-1.654,0-3,1.265-2.999,2.85l0.655,11.036c0,1.166,1.005,2.115,2.24,2.115   s2.24-0.949,2.238-2.076L21.5,11.52C21.5,9.965,20.154,8.7,18.5,8.7z M19.636,22.585c0,0.615-0.556,1.115-1.24,1.115   s-1.24-0.5-1.241-1.145L16.5,11.52c0-1.003,0.897-1.82,2-1.82s2,0.816,2.001,1.781L19.636,22.585z"/>
+                            <path fill="#FF4790" d="M3.591,30h8.843c0.276,0,0.5-0.224,0.5-0.5s-0.224-0.5-0.5-0.5H3.591c-0.969,0-1.821-0.504-2.279-1.349   c-0.45-0.83-0.411-1.799,0.105-2.591L16.326,2.172C16.804,1.438,17.617,1,18.5,1s1.696,0.438,2.174,1.172L35.583,25.06   c0.516,0.792,0.555,1.761,0.105,2.591C35.23,28.496,34.378,29,33.409,29h-8.843c-0.276,0-0.5,0.224-0.5,0.5s0.224,0.5,0.5,0.5   h8.843c1.342,0,2.522-0.7,3.158-1.873c0.628-1.158,0.573-2.509-0.146-3.614L21.512,1.626C20.849,0.607,19.723,0,18.5,0   s-2.349,0.608-3.012,1.626L0.579,24.514c-0.72,1.105-0.774,2.456-0.146,3.614C1.068,29.3,2.249,30,3.591,30z"/>
+                        </g>
+                    </svg>
                 </div>
-                <h2 class="text-3xl font-bold mb-2 text-slate-200">Welcome to HomeAI</h2>
-                <p>Select a model and start a conversation.</p>
-                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
-                    <div class="bg-slate-700/50 p-4 rounded-lg text-left">
-                        <h3 class="font-semibold text-slate-300 mb-1">Explain a concept</h3>
-                        <p class="text-sm">"Explain quantum computing in simple terms"</p>
-                    </div>
-                    <div class="bg-slate-700/50 p-4 rounded-lg text-left">
-                        <h3 class="font-semibold text-slate-300 mb-1">Write some code</h3>
-                        <p class="text-sm">"Write a python script to sort a list"</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="input-area p-6 bg-slate-800/90 backdrop-blur-sm border-t border-slate-700">
-            <div class="max-w-4xl mx-auto">
-                <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-                    <span class="ml-2">Stop Generation</span>
+                <h2 class="text-3xl font-bold text-white mb-2">API Connection</h2>
+                <p class="text-gray-400 mb-6">Please enter your API URL to continue.</p>
+                <input type="text" id="ngrokUrlInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 text-center focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all" placeholder="https://your-link.ngrok-free.app">
+                <button id="saveApiUrlBtn" class="mt-4 w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg shadow-pink-500/20">
+                    Connect
                 </button>
-                <form id="chat-form" class="relative">
-                    <textarea id="chat-input" class="w-full bg-slate-700 border border-slate-600 text-gray-200 rounded-xl p-4 pr-16 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 shadow-xl" placeholder="Send a message..." rows="1"></textarea>
-                    <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-700 rounded-full text-white disabled:bg-slate-500 transition-all transform hover:scale-110 disabled:scale-100 disabled:cursor-not-allowed">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </form>
+                <p id="api-error-message" class="text-red-400 mt-4 text-sm h-5"></p>
             </div>
         </div>
-    </main>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="settings-modal-content">
+                <h2 class="text-3xl font-bold text-white mb-6 text-center">Settings</h2>
+                <div>
+                    <label for="settingsNgrokUrlInput" class="block text-sm font-medium text-gray-300 mb-2">API URL</label>
+                    <input type="text" id="settingsNgrokUrlInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                     <button id="closeSettingsBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-all">Cancel</button>
+                     <button id="saveSettingsBtn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg transition-all">Save</button>
+                </div>
+                 <p id="settings-status-message" class="text-green-400 mt-4 text-sm h-5 text-center"></p>
+            </div>
+        </div>
+
+        <!-- Mobile Model Selection Screen -->
+        <div id="mobile-model-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex flex-col p-4">
+             <div id="mobile-model-content" class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-6 w-full max-w-md m-auto transform transition-all duration-300 scale-95 opacity-0">
+                <h2 class="text-2xl font-bold text-white mb-4 text-center">Select a Model</h2>
+                <div id="mobile-model-list" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Chat Interface -->
+    <div id="main-content" class="flex flex-1 h-screen opacity-0 transition-opacity duration-500">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gradient-to-b from-gray-800 to-gray-900 w-72 p-5 flex flex-col flex-shrink-0 border-r border-gray-700/50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 text-pink-400">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9.60601 5.5625C10.3721 5.5625 10.5197 5.40636 12 5.40636C13.4804 5.40636 13.6279 5.5625 14.394 5.5625C15.0324 5.5625 16.9477 4.00011 17.9053 4.00011C18.8629 4.00011 19.9801 4.56261 19.9801 6.18761V8.0625C19.9781 8.55469 19.7993 10.0634 19.0993 9.66022C20.2113 10.9744 19.98 12.5815 19.9801 14C19.9801 17.9062 14.7132 19 12 19C9.28677 19 4.01994 17.9062 4.01994 14C4.01995 12.5815 3.78875 10.9744 4.90066 9.66022C4.20072 10.0634 4.02188 8.55469 4.01995 8.0625V6.1875C4.01995 4.5625 5.13715 4 6.09476 4C7.05236 4 8.9676 5.5625 9.60601 5.5625Z" />
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">HomeAI</h1>
+                </div>
+                <button id="close-sidebar-btn" class="md:hidden text-gray-400 hover:text-white">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <button id="new-chat-btn" class="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105 shadow-lg shadow-pink-500/20">
+                New Chat
+            </button>
+
+            <div class="mt-6 pt-4 border-t border-gray-700/60 flex-grow flex flex-col min-h-0">
+                <label class="text-sm font-medium text-gray-300 mb-2">Chat History</label>
+                <div id="chat-history-list" class="flex-grow overflow-y-auto -mr-3 pr-2 space-y-1">
+                    <!-- Chat history items will be populated by JS -->
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-4 border-t border-gray-700/60 relative">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                <div id="custom-dropdown" class="relative">
+                    <button id="custom-dropdown-button" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 flex justify-between items-center focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                        <span id="selected-model-name"></span>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="custom-dropdown-options" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1">
+                    </div>
+                </div>
+            </div>
+            
+             <button id="settings-btn" class="mt-4 w-full text-gray-400 hover:bg-gray-700 hover:text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center">
+                Settings
+            </button>
+        </aside>
+
+        <!-- Chat Area -->
+        <main class="flex-1 flex flex-col h-screen bg-gray-900">
+             <header class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700/50 p-4 flex items-center justify-between md:justify-center text-center">
+                <button id="menu-btn" class="md:hidden text-gray-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div class="flex-1 text-center">
+                    <h2 class="text-lg font-semibold text-gray-300">Chatting with: <span id="current-model-display" class="font-bold text-pink-400"></span></h2>
+                    <p id="model-tidbit" class="text-sm text-gray-400 mt-1"></p>
+                </div>
+                 <div class="w-6 md:hidden"></div> <!-- Spacer for mobile -->
+            </header>
+            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Welcome Message -->
+                <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center text-gray-400">
+                     <div class="w-24 h-24 text-pink-500/50 mb-6">
+                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9.60601 5.5625C10.3721 5.5625 10.5197 5.40636 12 5.40636C13.4804 5.40636 13.6279 5.5625 14.394 5.5625C15.0324 5.5625 16.9477 4.00011 17.9053 4.00011C18.8629 4.00011 19.9801 4.56261 19.9801 6.18761V8.0625C19.9781 8.55469 19.7993 10.0634 19.0993 9.66022C20.2113 10.9744 19.98 12.5815 19.9801 14C19.9801 17.9062 14.7132 19 12 19C9.28677 19 4.01994 17.9062 4.01994 14C4.01995 12.5815 3.78875 10.9744 4.90066 9.66022C4.20072 10.0634 4.02188 8.55469 4.01995 8.0625V6.1875C4.01995 4.5625 5.13715 4 6.09476 4C7.05236 4 8.9676 5.5625 9.60601 5.5625Z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-4xl font-bold mb-2 text-gray-200">Hello there!</h2>
+                    <p>I'm HomeAI. Pick a model and let's chat.</p>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700/50">
+                <div class="max-w-4xl mx-auto">
+                    <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105">
+                        Stop Generation
+                    </button>
+                    <form id="chat-form" class="relative">
+                        <textarea id="chat-input" class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded-xl p-4 pr-16 resize-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-300 shadow-xl" placeholder="Send a message..." rows="1"></textarea>
+                        <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-pink-600 hover:bg-pink-700 rounded-full text-white disabled:bg-gray-600 transition-all transform hover:scale-110 disabled:scale-100 disabled:cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const API_URL_KEY = 'home_ai_ngrok_url';
+            const CHAT_HISTORY_KEY = 'home_ai_chat_sessions';
+            let currentModel = 'mistral';
+            let chatSessions = [];
+            let currentChatId = null;
+            let abortController = null;
+
+            const models = [
+                { value: 'FREEGPT', name: 'Tinskin', description: 'Continue bot. Write your prompt as if answering one.' },
+                { value: 'FREEGPT-2', name: 'Clanker', description: 'Continue bot. Write your prompt as if answering one.' },
+                { value: 'mistral', name: 'Mistral', description: "Can't follow complex ideas." },
+                { value: 'codellama', name: 'Bobby', description: 'Can sometimes follow complex ideas, good for coding.' },
+                { value: 'gemma3:4b', name: 'Jerma', description: 'Good all-around bot.' },
+                { value: 'gpt-oss:20b', name: 'Sheldon', description: 'Really smart, really slow.' }
+            ];
+
             // --- DOM Elements ---
-            const ngrokUrlInput = document.getElementById('ngrokUrl');
+            const apiSetupScreen = document.getElementById('api-setup-screen');
+            const apiModalContent = document.getElementById('api-modal-content');
+            const ngrokUrlInput = document.getElementById('ngrokUrlInput');
+            const saveApiUrlBtn = document.getElementById('saveApiUrlBtn');
+            const apiErrorMessage = document.getElementById('api-error-message');
+            
+            const settingsScreen = document.getElementById('settings-screen');
+            const settingsModalContent = document.getElementById('settings-modal-content');
+            const settingsNgrokUrlInput = document.getElementById('settingsNgrokUrlInput');
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            const settingsStatusMessage = document.getElementById('settings-status-message');
+            const settingsBtn = document.getElementById('settings-btn');
+
+            const mobileModelScreen = document.getElementById('mobile-model-screen');
+            const mobileModelContent = document.getElementById('mobile-model-content');
+            const mobileModelList = document.getElementById('mobile-model-list');
+
+            const mainContent = document.getElementById('main-content');
             const chatContainer = document.getElementById('chat-container');
             const chatForm = document.getElementById('chat-form');
             const chatInput = document.getElementById('chat-input');
-            const modelSelect = document.getElementById('model-select');
-            const memoryToggle = document.getElementById('memory-toggle');
+            
+            const customDropdown = document.getElementById('custom-dropdown');
+            const dropdownButton = document.getElementById('custom-dropdown-button');
+            const dropdownOptions = document.getElementById('custom-dropdown-options');
+            const selectedModelName = document.getElementById('selected-model-name');
+
             const newChatBtn = document.getElementById('new-chat-btn');
             const stopGenerationBtn = document.getElementById('stop-generation-btn');
             const welcomeMessage = document.getElementById('welcome-message');
+            const currentModelDisplay = document.getElementById('current-model-display');
+            const modelTidbit = document.getElementById('model-tidbit');
+            const chatHistoryList = document.getElementById('chat-history-list');
+
             const sidebar = document.getElementById('sidebar');
             const menuBtn = document.getElementById('menu-btn');
             const closeSidebarBtn = document.getElementById('close-sidebar-btn');
             const mobileOverlay = document.getElementById('mobile-overlay');
 
-            // --- State Management ---
-            let chatHistory = [];
-            let abortController = null;
-            const CHAT_LOG_KEY = 'home_ai_chat_history';
+            // --- Settings Modal ---
+            function openSettings() {
+                settingsNgrokUrlInput.value = localStorage.getItem(API_URL_KEY) || '';
+                settingsStatusMessage.textContent = '';
+                settingsScreen.style.display = 'flex';
+                setTimeout(() => {
+                    settingsModalContent.style.transform = 'scale(1)';
+                    settingsModalContent.style.opacity = '1';
+                }, 50);
+            }
 
-            // --- Mobile viewport handling ---
-            function handleViewportChange() {
-                // Force a reflow to handle virtual keyboard on mobile
-                if (window.innerWidth <= 768) {
-                    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+            function closeSettings() {
+                 settingsModalContent.style.transform = 'scale(0.95)';
+                 settingsModalContent.style.opacity = '0';
+                 setTimeout(() => {
+                    settingsScreen.style.display = 'none';
+                 }, 300);
+            }
+
+            // --- Custom Dropdown & Model Selection ---
+            function populateModelDropdowns() {
+                dropdownOptions.innerHTML = '';
+                mobileModelList.innerHTML = '';
+                models.forEach(model => {
+                    // Desktop
+                    const option = document.createElement('button');
+                    option.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
+                    option.textContent = model.name;
+                    option.dataset.value = model.value;
+                    option.addEventListener('click', () => {
+                        currentModel = model.value;
+                        updateCurrentModelDisplay();
+                        closeDropdown();
+                    });
+                    dropdownOptions.appendChild(option);
+
+                    // Mobile
+                    const mobileOption = document.createElement('button');
+                    mobileOption.className = 'w-full text-left p-4 text-lg text-gray-200 hover:bg-pink-600/50 rounded-lg';
+                    mobileOption.textContent = model.name;
+                    mobileOption.dataset.value = model.value;
+                    mobileOption.addEventListener('click', () => {
+                        currentModel = model.value;
+                        updateCurrentModelDisplay();
+                        closeMobileModelSelector();
+                    });
+                    mobileModelList.appendChild(mobileOption);
+                });
+            }
+
+            function openDropdown() {
+                dropdownOptions.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdownOptions.classList.add('opacity-100', 'scale-100');
+                    dropdownOptions.classList.remove('opacity-0', 'scale-95');
+                }, 10);
+            }
+
+            function closeDropdown() {
+                dropdownOptions.classList.remove('opacity-100', 'scale-100');
+                dropdownOptions.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => dropdownOptions.classList.add('hidden'), 200);
+            }
+            
+            function openMobileModelSelector() {
+                mobileModelScreen.style.display = 'flex';
+                setTimeout(() => {
+                    mobileModelContent.style.transform = 'scale(1)';
+                    mobileModelContent.style.opacity = '1';
+                }, 50);
+            }
+
+            function closeMobileModelSelector() {
+                 mobileModelContent.style.transform = 'scale(0.95)';
+                 mobileModelContent.style.opacity = '0';
+                 setTimeout(() => {
+                    mobileModelScreen.style.display = 'none';
+                 }, 300);
+            }
+
+            // --- API & Initialization ---
+            
+            async function checkApiUrl(url) {
+                if (!url) return false;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    const response = await fetch(`${url}/api/tags`, { method: 'GET', signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    return response.ok;
+                } catch (error) {
+                    console.error("API check failed:", error);
+                    return false;
                 }
             }
 
-            // Set initial viewport height
-            handleViewportChange();
-            window.addEventListener('resize', handleViewportChange);
-            window.addEventListener('orientationchange', () => {
-                setTimeout(handleViewportChange, 100);
-            });
+            async function initializeApp() {
+                populateModelDropdowns();
+                loadChatSessions();
+                renderChatHistory();
 
-            // --- API Functions ---
-            async function sendChatMessage(prompt, model, useMemory) {
+                const savedUrl = localStorage.getItem(API_URL_KEY);
+                const isValid = await checkApiUrl(savedUrl);
+
+                if (isValid) {
+                    showChatInterface();
+                } else {
+                    showApiSetup();
+                }
+                updateCurrentModelDisplay();
+                
+                if (chatSessions.length > 0) {
+                    loadChat(chatSessions[0].id);
+                } else {
+                    startNewChat();
+                }
+            }
+
+            function showApiSetup() {
+                apiSetupScreen.style.display = 'flex';
+                setTimeout(() => {
+                    apiModalContent.style.transform = 'scale(1)';
+                    apiModalContent.style.opacity = '1';
+                }, 50);
+            }
+
+            function showChatInterface() {
+                apiSetupScreen.style.display = 'none';
+                mainContent.style.opacity = '1';
+            }
+            
+            // --- Chat History Management ---
+            function saveChatSessions() {
+                localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatSessions));
+            }
+
+            function loadChatSessions() {
+                const savedSessions = localStorage.getItem(CHAT_HISTORY_KEY);
+                chatSessions = savedSessions ? JSON.parse(savedSessions) : [];
+            }
+
+            function renderChatHistory() {
+                chatHistoryList.innerHTML = '';
+                if (chatSessions.length === 0) {
+                    chatHistoryList.innerHTML = `<p class="text-sm text-gray-500 px-2">No past chats yet.</p>`;
+                    return;
+                }
+
+                chatSessions.forEach(session => {
+                    const item = document.createElement('div');
+                    item.className = `group flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-700/50 ${session.id === currentChatId ? 'bg-pink-600/30' : ''}`;
+                    
+                    const title = document.createElement('span');
+                    title.className = 'truncate text-sm';
+                    title.textContent = session.title;
+                    item.appendChild(title);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                    deleteBtn.className = 'text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteChat(session.id);
+                    };
+                    item.appendChild(deleteBtn);
+
+                    item.onclick = () => loadChat(session.id);
+                    chatHistoryList.appendChild(item);
+                });
+            }
+            
+            function loadChat(id) {
+                const session = chatSessions.find(s => s.id === id);
+                if (!session) return;
+                
+                currentChatId = id;
+                chatContainer.innerHTML = '';
+                if (session.messages.length > 0) {
+                    welcomeMessage.classList.add('hidden');
+                    session.messages.forEach(msg => addMessageToUI(msg.role, msg.content, false));
+                } else {
+                    chatContainer.appendChild(welcomeMessage);
+                    welcomeMessage.classList.remove('hidden');
+                }
+                renderChatHistory();
+                if (window.innerWidth < 768) {
+                    toggleSidebar(false);
+                }
+            }
+
+            function deleteChat(id) {
+                chatSessions = chatSessions.filter(s => s.id !== id);
+                saveChatSessions();
+                
+                if (currentChatId === id) {
+                    if (chatSessions.length > 0) {
+                        loadChat(chatSessions[0].id);
+                    } else {
+                        startNewChat();
+                    }
+                }
+                renderChatHistory();
+            }
+
+            // --- Chat Functions ---
+            async function sendChatMessage(prompt, modelValue) {
+                let currentSession = chatSessions.find(s => s.id === currentChatId);
+                if (!currentSession) return;
+
+                if (currentSession.messages.length === 0) {
+                    currentSession.title = prompt.substring(0, 30) + (prompt.length > 30 ? '...' : '');
+                }
+
+                currentSession.messages.push({ role: 'user', content: prompt });
+                saveChatSessions();
+                renderChatHistory();
+                
                 welcomeMessage.classList.add('hidden');
                 addMessageToUI('user', prompt);
                 const aiMessageElement = addMessageToUI('assistant', `<span class="blinking-cursor"></span>`);
 
                 setLoadingState(true);
-
                 abortController = new AbortController();
-                const signal = abortController.signal;
 
                 try {
-                    const ngrokUrl = ngrokUrlInput.value;
-                    const messages = useMemory ? [...chatHistory, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }];
+                    const ngrokUrl = localStorage.getItem(API_URL_KEY);
                     
                     const response = await fetch(`${ngrokUrl}/api/chat`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ model, messages, stream: true }),
-                        signal,
+                        body: JSON.stringify({ model: modelValue, messages: currentSession.messages, stream: true }),
+                        signal: abortController.signal,
                     });
 
-                    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                    if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
 
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
@@ -303,21 +564,18 @@
                                 }
                                 if (parsed.done) {
                                     updateMessageContent(aiMessageElement, fullResponse);
-                                    if (useMemory) {
-                                        chatHistory.push({ role: 'user', content: prompt });
-                                        chatHistory.push({ role: 'assistant', content: fullResponse });
-                                        saveChatHistory();
-                                    }
+                                    currentSession.messages.push({ role: 'assistant', content: fullResponse });
+                                    saveChatSessions();
                                     setLoadingState(false);
                                     return;
                                 }
-                            } catch (e) { console.error("Error parsing stream line:", line, e); }
+                            } catch (e) { console.error("Stream parse error:", line, e); }
                         }
                     }
                 } catch (error) {
                     if (error.name === 'AbortError') {
                         const content = aiMessageElement.innerHTML.replace('<span class="blinking-cursor"></span>', '');
-                        updateMessageContent(aiMessageElement, content + '<p class="text-red-400 mt-2 text-sm">[Generation stopped by user]</p>');
+                        updateMessageContent(aiMessageElement, content + '<p class="text-red-400 mt-2 text-sm">[Stopped by user]</p>');
                     } else {
                         updateMessageContent(aiMessageElement, `<p class="text-red-400">Error: ${error.message}</p>`);
                     }
@@ -329,25 +587,33 @@
             }
 
             // --- UI Functions ---
-            function createAvatar(role) {
-                const avatar = document.createElement('div');
-                avatar.className = `w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mr-4 shadow-md ${role === 'user' ? 'bg-indigo-500' : 'bg-slate-600'}`;
-                const svg = role === 'user' ? 
-                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-white"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.41-1.412A6.972 6.972 0 0010 11.5c-2.25 0-4.337.894-5.94 2.336a6.973 6.973 0 00-1.065.657z" /></svg>` :
-                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-indigo-300"><path fill-rule="evenodd" d="M11.29 2.234a1 1 0 00-1.022-.217l-4.034 2.017a1 1 0 00-.634.962V10a1 1 0 00.634.962l4.034 2.017a1 1 0 001.022-.217l4.017-4.017a1 1 0 000-1.414l-4.017-4.017zM10 8.364l2.121-2.121 2.121 2.121L10 12.607 5.757 8.364 7.879 6.243 10 8.364zM4.93 12.07a1 1 0 00-1.414 0l-1.28 1.28a1 1 0 000 1.414l4.017 4.017a1 1 0 001.414 0l1.28-1.28a1 1 0 000-1.414l-4.017-4.017z" clip-rule="evenodd" /></svg>`;
-                avatar.innerHTML = svg;
-                return avatar;
+            function startNewChat() {
+                const newSession = {
+                    id: Date.now().toString(),
+                    title: 'New Chat',
+                    messages: [],
+                };
+                chatSessions.unshift(newSession);
+                currentChatId = newSession.id;
+                
+                chatContainer.innerHTML = '';
+                chatContainer.appendChild(welcomeMessage);
+                welcomeMessage.classList.remove('hidden');
+                
+                if (abortController) abortController.abort();
+                setLoadingState(false);
+                saveChatSessions();
+                renderChatHistory();
             }
 
-            function addMessageToUI(role, content) {
+            function addMessageToUI(role, content, animate = true) {
                 const messageWrapper = document.createElement('div');
-                messageWrapper.className = `flex items-start message-animate`;
+                messageWrapper.className = `flex items-start ${animate ? 'fade-in' : ''}`;
                 
                 const avatar = createAvatar(role);
                 const messageBubble = document.createElement('div');
-                const bgColor = role === 'user' ? 'bg-indigo-600' : 'bg-slate-700';
+                const bgColor = role === 'user' ? 'bg-pink-600/30' : 'bg-gray-700/50';
                 messageBubble.className = `max-w-3xl w-full p-4 rounded-lg prose-styles text-white shadow-lg ${bgColor}`;
-                messageBubble.innerHTML = marked.parse(content);
                 
                 messageWrapper.appendChild(avatar);
                 messageWrapper.appendChild(messageBubble);
@@ -358,15 +624,26 @@
                 return messageBubble;
             }
 
+            function createAvatar(role) {
+                const avatar = document.createElement('div');
+                avatar.className = `w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mr-4 shadow-md ${role === 'user' ? 'bg-pink-600' : 'bg-gray-600'}`;
+                const svg = role === 'user' ?
+                    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-white"><path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.41-1.412A6.972 6.972 0 0010 11.5c-2.25 0-4.337.894-5.94 2.336a6.973 6.973 0 00-1.065.657z" /></svg>` :
+                    `<div class="w-5 h-5 text-pink-300"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.60601 5.5625C10.3721 5.5625 10.5197 5.40636 12 5.40636C13.4804 5.40636 13.6279 5.5625 14.394 5.5625C15.0324 5.5625 16.9477 4.00011 17.9053 4.00011C18.8629 4.00011 19.9801 4.56261 19.9801 6.18761V8.0625C19.9781 8.55469 19.7993 10.0634 19.0993 9.66022C20.2113 10.9744 19.98 12.5815 19.9801 14C19.9801 17.9062 14.7132 19 12 19C9.28677 19 4.01994 17.9062 4.01994 14C4.01995 12.5815 3.78875 10.9744 4.90066 9.66022C4.20072 10.0634 4.02188 8.55469 4.01995 8.0625V6.1875C4.01995 4.5625 5.13715 4 6.09476 4C7.05236 4 8.9676 5.5625 9.60601 5.5625Z" /></svg></div>`;
+                avatar.innerHTML = svg;
+                return avatar;
+            }
+
             function updateMessageContent(element, content) {
                 element.innerHTML = marked.parse(content);
-                element.querySelectorAll('pre code').forEach((block) => {
-                    const pre = block.parentElement;
+                element.querySelectorAll('pre').forEach((pre) => {
+                    const code = pre.querySelector('code');
+                    if (!code) return;
                     const copyBtn = document.createElement('button');
                     copyBtn.innerText = 'Copy';
                     copyBtn.className = 'copy-btn';
                     copyBtn.onclick = () => {
-                        navigator.clipboard.writeText(block.innerText);
+                        navigator.clipboard.writeText(code.innerText);
                         copyBtn.innerText = 'Copied!';
                         setTimeout(() => { copyBtn.innerText = 'Copy'; }, 2000);
                     };
@@ -374,9 +651,7 @@
                 });
             }
 
-            function scrollToBottom() { 
-                chatContainer.scrollTop = chatContainer.scrollHeight; 
-            }
+            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
 
             function setLoadingState(isLoading) {
                 chatInput.disabled = isLoading;
@@ -390,16 +665,6 @@
                     chatInput.focus();
                 }
             }
-
-            function startNewChat() {
-                chatContainer.innerHTML = '';
-                chatHistory = [];
-                localStorage.removeItem(CHAT_LOG_KEY);
-                chatContainer.appendChild(welcomeMessage);
-                welcomeMessage.classList.remove('hidden');
-                if (abortController) abortController.abort();
-                setLoadingState(false);
-            }
             
             function autoResizeTextarea() {
                 chatInput.style.height = 'auto';
@@ -407,38 +672,95 @@
                 chatInput.style.height = newHeight + 'px';
             }
 
-            // --- Chat Log Functions ---
-            function saveChatHistory() { localStorage.setItem(CHAT_LOG_KEY, JSON.stringify(chatHistory)); }
-
-            function loadChatHistory() {
-                const savedHistory = localStorage.getItem(CHAT_LOG_KEY);
-                if (savedHistory) {
-                    chatHistory = JSON.parse(savedHistory);
-                    if (chatHistory.length > 0) {
-                        welcomeMessage.classList.add('hidden');
-                        chatContainer.innerHTML = '';
-                        chatHistory.forEach(message => addMessageToUI(message.role, message.content));
-                    }
+            function updateCurrentModelDisplay() {
+                const selectedModel = models.find(m => m.value === currentModel);
+                if (selectedModel) {
+                    currentModelDisplay.textContent = selectedModel.name;
+                    modelTidbit.textContent = selectedModel.description;
+                    selectedModelName.textContent = selectedModel.name;
                 }
             }
             
             // --- Mobile Sidebar ---
             function toggleSidebar(show) {
                 if (show) {
-                    sidebar.classList.add('sidebar-open');
+                    sidebar.classList.add('open');
                     mobileOverlay.classList.remove('hidden');
                 } else {
-                    sidebar.classList.remove('sidebar-open');
+                    sidebar.classList.remove('open');
                     mobileOverlay.classList.add('hidden');
                 }
             }
 
             // --- Event Listeners ---
+            menuBtn.addEventListener('click', () => toggleSidebar(true));
+            closeSidebarBtn.addEventListener('click', () => toggleSidebar(false));
+            mobileOverlay.addEventListener('click', () => toggleSidebar(false));
+            
+            settingsBtn.addEventListener('click', openSettings);
+            closeSettingsBtn.addEventListener('click', closeSettings);
+            saveSettingsBtn.addEventListener('click', async () => {
+                const url = settingsNgrokUrlInput.value.trim();
+                settingsStatusMessage.textContent = 'Validating...';
+                const isValid = await checkApiUrl(url);
+                if (isValid) {
+                    localStorage.setItem(API_URL_KEY, url);
+                    settingsStatusMessage.textContent = 'Saved successfully!';
+                    setTimeout(closeSettings, 1500);
+                } else {
+                    settingsStatusMessage.classList.add('text-red-400');
+                    settingsStatusMessage.textContent = 'Connection failed. Please check the URL.';
+                }
+            });
+            
+            dropdownButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.innerWidth < 768) {
+                    openMobileModelSelector();
+                } else {
+                    if (dropdownOptions.classList.contains('hidden')) {
+                        openDropdown();
+                    } else {
+                        closeDropdown();
+                    }
+                }
+            });
+
+            window.addEventListener('click', (e) => {
+                if (!customDropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+                if (e.target === mobileModelScreen) {
+                    closeMobileModelSelector();
+                }
+            });
+
+            saveApiUrlBtn.addEventListener('click', async () => {
+                const url = ngrokUrlInput.value.trim();
+                if (!url) {
+                    apiErrorMessage.textContent = 'Please enter a URL.';
+                    return;
+                }
+                
+                apiErrorMessage.textContent = 'Connecting...';
+                saveApiUrlBtn.disabled = true;
+
+                const isValid = await checkApiUrl(url);
+
+                if (isValid) {
+                    localStorage.setItem(API_URL_KEY, url);
+                    showChatInterface();
+                } else {
+                    apiErrorMessage.textContent = 'Connection failed. Check the URL and try again.';
+                }
+                saveApiUrlBtn.disabled = false;
+            });
+
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const prompt = chatInput.value.trim();
                 if (prompt && !chatInput.disabled) {
-                    sendChatMessage(prompt, modelSelect.value, memoryToggle.checked);
+                    sendChatMessage(prompt, currentModel);
                     chatInput.value = '';
                     autoResizeTextarea();
                 }
@@ -453,26 +775,11 @@
             
             chatInput.addEventListener('input', autoResizeTextarea);
             newChatBtn.addEventListener('click', startNewChat);
-
             stopGenerationBtn.addEventListener('click', () => { if (abortController) abortController.abort(); });
             
-            menuBtn.addEventListener('click', () => toggleSidebar(true));
-            closeSidebarBtn.addEventListener('click', () => toggleSidebar(false));
-            mobileOverlay.addEventListener('click', () => toggleSidebar(false));
-
-            // --- Mobile input focus handling ---
-            chatInput.addEventListener('focus', () => {
-                if (window.innerWidth <= 768) {
-                    // Small delay to allow virtual keyboard to appear
-                    setTimeout(() => {
-                        chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 300);
-                }
-            });
-
-            // --- Initialization ---
+            // --- Init ---
+            initializeApp();
             autoResizeTextarea();
-            loadChatHistory();
         });
     </script>
 </body>
