@@ -239,33 +239,6 @@
                         <textarea id="personalization-input" rows="3" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-pink-500" placeholder="e.g., Always respond in the style of a pirate."></textarea>
                         <p class="text-xs text-gray-400 mt-1">Add a custom instruction that is sent to the AI with every message to tailor its personality or response style.</p>
                     </div>
-                    <!-- ExplainoBot -->
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <label for="explainobot-toggle" class="text-sm font-medium text-gray-300">ExplainoBot</label>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="explainobot-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
-                            </label>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-1">Adds a button to AI responses to get a quick summary from a secondary model.</p>
-                         <div id="explainobot-model-select-container" class="hidden mt-2">
-                             <select id="explainobot-model-select" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-pink-500">
-                                <!-- Models populated by JS -->
-                             </select>
-                        </div>
-                    </div>
-                    <!-- Retry -->
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <label for="retry-toggle" class="text-sm font-medium text-gray-300">Retry</label>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="retry-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
-                            </label>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-1">Adds a button to AI responses to regenerate the response with a different style.</p>
-                    </div>
                     <!-- Cat-ify -->
                     <div>
                         <div class="flex items-center justify-between">
@@ -474,10 +447,6 @@
             const tokenCapDisplay = document.getElementById('token-cap-display');
             const wordEstimateDisplay = document.getElementById('word-estimate-display');
             const personalizationInput = document.getElementById('personalization-input');
-            const explainobotToggle = document.getElementById('explainobot-toggle');
-            const explainobotModelSelectContainer = document.getElementById('explainobot-model-select-container');
-            const explainobotModelSelect = document.getElementById('explainobot-model-select');
-            const retryToggle = document.getElementById('retry-toggle');
             const catifyToggle = document.getElementById('catify-toggle');
 
 
@@ -489,9 +458,6 @@
                     enforceBrevity: false,
                     tokenCap: 1000,
                     personalization: '',
-                    explainobot: false,
-                    explainobotModel: 'default',
-                    retry: false,
                     catify: false
                 };
                 applyExperimentalSettingsToUI();
@@ -503,9 +469,6 @@
                 experimentalSettings.enforceBrevity = enforceBrevityToggle.checked;
                 experimentalSettings.tokenCap = parseInt(tokenCapSlider.value);
                 experimentalSettings.personalization = personalizationInput.value;
-                experimentalSettings.explainobot = explainobotToggle.checked;
-                experimentalSettings.explainobotModel = explainobotModelSelect.value;
-                experimentalSettings.retry = retryToggle.checked;
                 experimentalSettings.catify = catifyToggle.checked;
                 localStorage.setItem(EXPERIMENTAL_SETTINGS_KEY, JSON.stringify(experimentalSettings));
             }
@@ -517,13 +480,9 @@
                 tokenCapDisplay.textContent = experimentalSettings.tokenCap;
                 wordEstimateDisplay.textContent = Math.round(experimentalSettings.tokenCap * 0.75);
                 personalizationInput.value = experimentalSettings.personalization;
-                explainobotToggle.checked = experimentalSettings.explainobot;
-                explainobotModelSelect.value = experimentalSettings.explainobotModel;
-                retryToggle.checked = experimentalSettings.retry;
                 catifyToggle.checked = experimentalSettings.catify;
 
                 enforceBrevitySliderContainer.style.display = experimentalSettings.enforceBrevity ? 'block' : 'none';
-                explainobotModelSelectContainer.style.display = experimentalSettings.explainobot ? 'block' : 'none';
             }
             
             function openSettings() {
@@ -570,12 +529,6 @@
             function populateModelDropdowns() {
                 dropdownOptions.innerHTML = '';
                 mobileModelList.innerHTML = '';
-                explainobotModelSelect.innerHTML = '';
-                
-                const defaultOption = document.createElement('option');
-                defaultOption.value = 'default';
-                defaultOption.textContent = 'Default (Use Current Model)';
-                explainobotModelSelect.appendChild(defaultOption);
 
                 models.forEach(model => {
                     // Desktop
@@ -611,14 +564,6 @@
                         closeMobileModelSelector();
                     });
                     mobileModelList.appendChild(mobileOption);
-                    
-                    // ExplainoBot Select
-                    if (!model.disabled) {
-                        const explainoOption = document.createElement('option');
-                        explainoOption.value = model.value;
-                        explainoOption.textContent = model.name;
-                        explainobotModelSelect.appendChild(explainoOption);
-                    }
                 });
             }
 
@@ -927,13 +872,16 @@
                 setLoadingState(false);
                 saveChatSessions();
                 renderChatHistory();
+                if (window.innerWidth < 768) {
+                    toggleSidebar(false);
+                }
             }
 
             function addMessageToUI(role, content, animate = true, index) {
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `flex items-start ${animate ? 'fade-in' : ''}`;
                 if (role === 'user') {
-                    messageWrapper.classList.add('justify-end', 'flex-row-reverse');
+                    messageWrapper.classList.add('flex-row-reverse');
                 }
                 
                 const avatar = createAvatar(role);
@@ -946,14 +894,24 @@
                 messageBubble.appendChild(proseContainer);
                 
                 messageWrapper.appendChild(avatar);
-                messageWrapper.appendChild(messageBubble);
+
+                // MODIFICATION: For assistant messages, we now create a new vertical container
+                // that will hold both the message bubble and the action buttons below it.
+                if (role === 'assistant') {
+                    const contentContainer = document.createElement('div');
+                    contentContainer.appendChild(messageBubble);
+                    messageWrapper.appendChild(contentContainer);
+                } else {
+                    // User messages don't have buttons, so no extra container is needed.
+                    messageWrapper.appendChild(messageBubble);
+                }
+
                 chatContainer.appendChild(messageWrapper);
                 
                 updateMessageContent(messageBubble, content, index);
                 scrollToBottom();
                 return messageBubble;
             }
-
             function createAvatar(role) {
                 const avatar = document.createElement('div');
                 const marginClass = role === 'user' ? 'ml-4' : 'mr-4';
@@ -986,64 +944,17 @@
                 
                 const isAssistantMessage = element.closest('.flex').querySelector('.bg-gray-600');
 
-                if (experimentalSettings.retry && isAssistantMessage) {
-                    const retryContainer = document.createElement('div');
-                    retryContainer.className = 'relative mt-2 text-right';
-
-                    const retryBtn = document.createElement('button');
-                    retryBtn.className = 'bg-gray-800/50 text-xs text-gray-300 px-2 py-1 rounded-md hover:bg-gray-700/50';
-                    retryBtn.textContent = 'Retry';
-
-                    const retryDropdown = document.createElement('div');
-                    retryDropdown.className = 'hidden absolute bottom-full right-0 mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1';
-
-                    const retryOptions = [
-                        { text: 'No changes', modifier: '' },
-                        { text: '...longer', modifier: ' Make the response longer.' },
-                        { text: '...shorter', modifier: ' Make the response shorter.' },
-                        { text: '...less serious', modifier: ' Make the response less serious.' },
-                        { text: '...more serious', modifier: ' Make the response more serious.' },
-                        { text: '...custom', modifier: 'custom' }
-                    ];
-
-                    retryOptions.forEach(opt => {
-                        const btn = document.createElement('button');
-                        btn.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
-                        btn.textContent = opt.text;
-                        btn.onclick = () => {
-                            const userPrompt = chatSessions.find(s => s.id === currentChatId).messages[index - 1].content;
-                            let modifiedPrompt = userPrompt + opt.modifier;
-                            if (opt.modifier === 'custom') {
-                                const customInput = prompt("Enter custom retry instruction:");
-                                if (customInput) {
-                                    modifiedPrompt = `${userPrompt} ${customInput}`;
-                                } else {
-                                    return;
-                                }
-                            }
-                            element.parentElement.remove(); // Remove old AI response
-                            sendChatMessage(modifiedPrompt, currentModel, true);
-                            retryDropdown.classList.add('hidden');
-                        };
-                        retryDropdown.appendChild(btn);
-                    });
-
-                    retryBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        retryDropdown.classList.toggle('hidden');
-                    };
-
-                    retryContainer.appendChild(retryBtn);
-                    retryContainer.appendChild(retryDropdown);
-                    element.appendChild(retryContainer);
-                }
-
-                if (experimentalSettings.explainobot && isAssistantMessage) {
+                if (isAssistantMessage) {
+                    const actionsContainer = document.createElement('div');
+                    // MODIFICATION: Added margin-top to give space between the bubble and buttons.
+                    actionsContainer.className = 'flex justify-end space-x-2 mt-2';
+                    
                     const explainoContainer = document.createElement('div');
-                    explainoContainer.className = 'relative mt-2';
+                    explainoContainer.className = 'relative';
                     
                     const explainoBtn = document.createElement('button');
-                    explainoBtn.className = 'bg-gray-800/50 text-xs text-gray-300 px-2 py-1 rounded-md hover:bg-gray-700/50';
+                    // MODIFICATION: Changed to 'rounded-md' for a complete, standalone button look.
+                    explainoBtn.className = 'bg-gradient-to-b from-[#35142B] to-[#4E1D3F] text-xs text-pink-300 px-3 py-1 rounded-md hover:from-[#4E1D3F] hover:to-[#5A244A] transition-colors';
                     explainoBtn.textContent = 'Explain';
                     
                     const explainoDropdown = document.createElement('div');
@@ -1104,11 +1015,63 @@
 
                     explainoContainer.appendChild(explainoBtn);
                     explainoContainer.appendChild(explainoDropdown);
-                    element.appendChild(explainoContainer);
-                }
-            }
+                    actionsContainer.appendChild(explainoContainer);
 
-            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+                    const retryContainer = document.createElement('div');
+                    retryContainer.className = 'relative';
+
+                    const retryBtn = document.createElement('button');
+                    // MODIFICATION: Changed to 'rounded-md' for a complete, standalone button look.
+                    retryBtn.className = 'bg-gradient-to-b from-[#35142B] to-[#4E1D3F] text-xs text-pink-300 px-3 py-1 rounded-md hover:from-[#4E1D3F] hover:to-[#5A244A] transition-colors';
+                    retryBtn.textContent = 'Retry';
+
+                    const retryDropdown = document.createElement('div');
+                    retryDropdown.className = 'hidden absolute bottom-full right-0 mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1';
+
+                    const retryOptions = [
+                        { text: 'No changes', modifier: '' },
+                        { text: '...longer', modifier: ' Make the response longer.' },
+                        { text: '...shorter', modifier: ' Make the response shorter.' },
+                        { text: '...less serious', modifier: ' Make the response less serious.' },
+                        { text: '...more serious', modifier: ' Make the response more serious.' },
+                        { text: '...custom', modifier: 'custom' }
+                    ];
+
+                    retryOptions.forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = 'w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-pink-600/50 rounded-md';
+                        btn.textContent = opt.text;
+                        btn.onclick = () => {
+                            const userPrompt = chatSessions.find(s => s.id === currentChatId).messages[index - 1].content;
+                            let modifiedPrompt = userPrompt + opt.modifier;
+                            if (opt.modifier === 'custom') {
+                                const customInput = prompt("Enter custom retry instruction:");
+                                if (customInput) {
+                                    modifiedPrompt = `${userPrompt} ${customInput}`;
+                                } else {
+                                    return;
+                                }
+                            }
+                            element.parentElement.remove(); // Remove old AI response
+                            sendChatMessage(modifiedPrompt, currentModel, true);
+                            retryDropdown.classList.add('hidden');
+                        };
+                        retryDropdown.appendChild(btn);
+                    });
+
+                    retryBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        retryDropdown.classList.toggle('hidden');
+                    };
+
+                    retryContainer.appendChild(retryBtn);
+                    retryContainer.appendChild(retryDropdown);
+                    actionsContainer.appendChild(retryContainer);
+
+                    // MODIFICATION: Appending to the new contentContainer (element.parentElement)
+                    element.parentElement.appendChild(actionsContainer);
+                }
+            }            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
 
             function setLoadingState(isLoading) {
                 chatInput.disabled = isLoading;
@@ -1287,9 +1250,6 @@
             tokenCapSlider.addEventListener('input', () => {
                 tokenCapDisplay.textContent = tokenCapSlider.value;
                 wordEstimateDisplay.textContent = Math.round(tokenCapSlider.value * 0.75);
-            });
-            explainobotToggle.addEventListener('change', () => {
-                explainobotModelSelectContainer.style.display = explainobotToggle.checked ? 'block' : 'none';
             });
 
             // --- Init ---
