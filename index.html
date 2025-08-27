@@ -137,9 +137,7 @@
 <body class="flex h-screen overflow-hidden">
     <div id="notification-area" class="absolute top-0 left-1/2 -translate-x-1/2 z-[100] p-4 space-y-2"></div>
     <div id="mobile-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-50"></div>
-    <!-- Modal Screens Container -->
     <div id="modal-container">
-        <!-- API Setup Screen -->
         <div id="api-setup-screen" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-md text-center transform transition-all duration-300 scale-95 opacity-0" id="api-modal-content">
                  <div class="mx-auto w-16 h-16 mb-4 text-pink-400">
@@ -147,7 +145,7 @@
                         <g>
                             <path fill="#FF4790" d="M18.5,26.908c-1.383,0-2.508,1.127-2.508,2.513c0,1.386,1.125,2.514,2.508,2.514s2.508-1.127,2.508-2.514   C21.008,28.036,19.883,26.908,18.5,26.908z M18.5,30.935c-0.832,0-1.508-0.679-1.508-1.514s0.676-1.513,1.508-1.513   s1.508,0.679,1.508,1.513S19.332,30.935,18.5,30.935z"/>
                             <path fill="#FF4790" d="M18.5,8.7c-1.654,0-3,1.265-2.999,2.85l0.655,11.036c0,1.166,1.005,2.115,2.24,2.115   s2.24-0.949,2.238-2.076L21.5,11.52C21.5,9.965,20.154,8.7,18.5,8.7z M19.636,22.585c0,0.615-0.556,1.115-1.24,1.115   s-1.24-0.5-1.241-1.145L16.5,11.52c0-1.003,0.897-1.82,2-1.82s2,0.816,2.001,1.781L19.636,22.585z"/>
-                            <path fill="#FF4790" d="M3.591,30h8.843c0.276,0,0.5-0.224,0.5-0.5s-0.224-0.5-0.5-0.5H3.591c-0.969,0-1.821-0.504-2.279-1.349   c-0.45-0.83-0.411-1.799,0.105-2.591L16.326,2.172C16.804,1.438,17.617,1,18.5,1s1.696,0.438,2.174,1.172L35.583,25.06   c0.516,0.792,0.555,1.761,0.105,2.591C35.23,28.496,34.378,29,33.409,29h-8.843c-0.276,0-0.5,0.224-0.5,0.5s0.224,0.5,0.5,0.5   h8.843c1.342,0,2.522-0.7,3.158-1.873c0.628-1.158,0.573-2.509-0.146-3.614L21.512,1.626C20.849,0.607,19.723,0,18.5,0   s-2.349,0.608-3.012,1.626L0.579,24.514c-0.72,1.105-0.774,2.456-0.146,3.614C1.068,29.3,2.249,30,3.591,30z"/>
+                            <path fill="#FF4790" d="M3.591,30h8.843c0.276,0,0.5-0.224,0.5-0.5s-0.224-0.5-0.5-0.5H3.591c-0.969,0-1.821-0.504-2.279-1.349   c-0.45-0.83-0.411-1.799,0.105-2.591L16.326,2.172C16.804,1.438,17.617,1,18.5,1s1.696,0.438,2.174,1.172L35.583,25.06   c0.516,0.792,0.555,1.761,0.105,2.591C35.23,28.496,34.378,29,33.409,29h-8.843c-0.276,0-0.5,0.224,0.5,0.5s0.224,0.5,0.5,0.5   h8.843c1.342,0,2.522-0.7,3.158-1.873c0.628-1.158,0.573-2.509-0.146-3.614L21.512,1.626C20.849,0.607,19.723,0,18.5,0   s-2.349,0.608-3.012,1.626L0.579,24.514c-0.72,1.105-0.774,2.456-0.146,3.614C1.068,29.3,2.249,30,3.591,30z"/>
                         </g>
                     </svg>
                 </div>
@@ -161,18 +159,15 @@
             </div>
         </div>
 
-        <!-- Settings Screen -->
         <div id="settings-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-screen" id="settings-modal-content">
                 <h2 class="text-3xl font-bold text-white mb-6 text-center">Settings</h2>
                 
-                <!-- General Settings -->
                 <div>
                     <label for="settingsNgrokUrlInput" class="block text-sm font-medium text-gray-300 mb-2">API URL / Key</label>
                     <input type="text" id="settingsNgrokUrlInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
                 </div>
                 
-                <!-- URL Compressor -->
                 <div class="mt-4 pt-4 border-t border-gray-700/60">
                     <label for="url-to-compress" class="block text-sm font-medium text-gray-300 mb-2">Generate Key from URL</label>
                     <div class="flex space-x-2">
@@ -202,12 +197,10 @@
             </div>
         </div>
 
-        <!-- Experimental Settings Screen -->
         <div id="experimental-settings-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-screen" id="experimental-modal-content">
                 <h2 class="text-3xl font-bold text-white mb-6 text-center">Experimental Settings</h2>
                 <div class="space-y-4">
-                    <!-- Brevity Mode -->
                     <div>
                         <div class="flex items-center justify-between">
                             <label for="brevity-mode-toggle" class="text-sm font-medium text-gray-300">Brevity Mode</label>
@@ -218,7 +211,6 @@
                         </div>
                         <p class="text-xs text-gray-400 mt-1">Encourages the AI to provide shorter, more concise answers.</p>
                     </div>
-                    <!-- Enforce Brevity -->
                     <div>
                         <div class="flex items-center justify-between">
                             <label for="enforce-brevity-toggle" class="text-sm font-medium text-gray-300">Enforce Brevity (Token Cap)</label>
@@ -233,13 +225,11 @@
                             <p class="text-xs text-center text-gray-400 mt-1">~<span id="token-cap-display">1000</span> tokens (~<span id="word-estimate-display">750</span> words)</p>
                         </div>
                     </div>
-                    <!-- Personalization -->
                     <div>
                         <label for="personalization-input" class="text-sm font-medium text-gray-300 mb-2 block">Personalization</label>
                         <textarea id="personalization-input" rows="3" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2 focus:ring-2 focus:ring-pink-500" placeholder="e.g., Always respond in the style of a pirate."></textarea>
                         <p class="text-xs text-gray-400 mt-1">Add a custom instruction that is sent to the AI with every message to tailor its personality or response style.</p>
                     </div>
-                    <!-- Cat-ify -->
                     <div>
                         <div class="flex items-center justify-between">
                             <label for="catify-toggle" class="text-sm font-medium text-gray-300">Cat-ify</label>
@@ -257,7 +247,6 @@
             </div>
         </div>
 
-        <!-- Mobile Model Selection Screen -->
         <div id="mobile-model-screen" class="hidden fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-[80] flex flex-col p-4">
              <div id="mobile-model-content" class="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-6 w-full max-w-md m-auto transform transition-all duration-300 scale-95 opacity-0">
                 <h2 class="text-2xl font-bold text-white mb-4 text-center">Select a Model</h2>
@@ -267,9 +256,7 @@
     </div>
 
 
-    <!-- Main Chat Interface -->
     <div id="main-content" class="flex flex-1 h-screen opacity-0 transition-opacity duration-500">
-        <!-- Sidebar -->
         <aside id="sidebar" class="bg-gradient-to-b from-gray-800 to-gray-900 w-72 p-5 flex flex-col flex-shrink-0 border-r border-gray-700/50">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -292,8 +279,7 @@
             <div class="mt-6 pt-4 border-t border-gray-700/60 flex-grow flex flex-col min-h-0">
                 <label class="text-sm font-medium text-gray-300 mb-2">Chat History</label>
                 <div id="chat-history-list" class="flex-grow overflow-y-auto -mr-3 pr-2 space-y-1">
-                    <!-- Chat history items will be populated by JS -->
-                </div>
+                    </div>
             </div>
 
             <div class="space-y-2 pt-4 border-t border-gray-700/60 relative">
@@ -313,7 +299,6 @@
             </button>
         </aside>
 
-        <!-- Chat Area -->
         <main class="flex-1 flex flex-col h-screen bg-gray-900">
              <header class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700/50 p-4 flex items-center justify-between md:justify-center text-center">
                 <button id="menu-btn" class="md:hidden text-gray-300 hover:text-white">
@@ -323,10 +308,8 @@
                     <h2 class="text-lg font-semibold text-gray-300">Chatting with: <span id="current-model-display" class="font-bold text-pink-400"></span></h2>
                     <p id="model-tidbit" class="text-sm text-gray-400 mt-1"></p>
                 </div>
-                 <div class="w-6 md:hidden"></div> <!-- Spacer for mobile -->
-            </header>
+                 <div class="w-6 md:hidden"></div> </header>
             <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Welcome Message -->
                 <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center text-gray-400">
                      <div class="w-24 h-24 text-pink-500/50 mb-6">
                         <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -629,10 +612,8 @@
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    // MODIFICATION: Added the ngrok-skip-browser-warning header
                     const response = await fetch(`${url}/api/tags`, { 
                         method: 'GET', 
-                        //headers: { 'ngrok-skip-browser-warning': 'true' },
                         signal: controller.signal 
                     });
                     clearTimeout(timeoutId);
@@ -774,10 +755,8 @@
                     const ngrokUrl = getUrlFromInput(localStorage.getItem(API_URL_KEY));
                     const response = await fetch(`${ngrokUrl}/api/chat`, {
                         method: 'POST',
-                        // MODIFICATION: Added the ngrok-skip-browser-warning header
                         headers: { 
                             'Content-Type': 'application/json'
-                            //'ngrok-skip-browser-warning': 'true'
                         },
                         body: JSON.stringify({ model: modelValue, messages, stream: true }),
                         signal: abortController.signal,
@@ -817,50 +796,82 @@
                     if(cursor) cursor.remove();
                 }
             }            
-            async function sendChatMessage(prompt, modelValue, isRetry = false) {
+            
+            // MODIFICATION START: Updated sendChatMessage function
+            async function sendChatMessage(prompt, modelValue, isRetry = false, retryInstruction = '') {
                 let currentSession = chatSessions.find(s => s.id === currentChatId);
                 if (!currentSession) return;
                 
                 const isFirstMessage = currentSession.messages.length === 0;
 
-                if (isRetry) {
-                    currentSession.messages.pop(); // Remove last AI response
+                // --- 1. Prepare API payload WITHOUT modifying main state ---
+                let messagesToApi = JSON.parse(JSON.stringify(currentSession.messages));
+                if(isRetry) {
+                    messagesToApi.pop(); // Remove last AI message for the API call
+                } else {
+                    messagesToApi.push({ role: 'user', content: prompt });
                 }
-                currentSession.messages.push({ role: 'user', content: prompt });
                 
-                let messagesToApi = [...currentSession.messages];
+                if (retryInstruction) {
+                    const lastMessageIndex = messagesToApi.length - 1;
+                    if (lastMessageIndex >= 0) {
+                        messagesToApi[lastMessageIndex].content = `${retryInstruction} "${prompt}"`;
+                    }
+                }
                 if (experimentalSettings.brevityMode) messagesToApi.unshift({ role: 'system', content: 'Please be brief in your response.' });
                 if (experimentalSettings.personalization) messagesToApi.unshift({ role: 'system', content: experimentalSettings.personalization });
                 if (experimentalSettings.catify) messagesToApi.unshift({ role: 'system', content: 'Respond like a cat. Include meows and purrs.' });
 
-                saveChatSessions();
-                renderChatHistory();
+                // --- 2. Update UI optimistically ---
                 welcomeMessage.classList.add('hidden');
-                
+                // The retry onclick handler already removes the old AI bubble from the DOM.
                 if (!isRetry) {
-                    addMessageToUI('user', prompt, true, currentSession.messages.length - 1);
+                    addMessageToUI('user', prompt, true, currentSession.messages.length);
                 }
-
-                const aiMessageElement = addMessageToUI('assistant', ``, true, currentSession.messages.length);
+                const aiMessageElement = addMessageToUI('assistant', ``, true, currentSession.messages.length + (isRetry ? 0 : 1));
                 
+                // --- 3. Stream response ---
                 setLoadingState(true);
                 const finalResponseText = await streamResponse(JSON.stringify(messagesToApi), modelValue, aiMessageElement.querySelector('.prose-styles'));
                 setLoadingState(false);
                 
+                // --- 4. Finalize state based on stream result ---
                 if (finalResponseText) {
+                    // Success: Modify the actual session history now
+                    if (isRetry) {
+                        currentSession.messages.pop(); // Remove old AI message from history
+                    } else {
+                        currentSession.messages.push({ role: 'user', content: prompt }); // Add new user message to history
+                    }
                     currentSession.messages.push({ role: 'assistant', content: finalResponseText });
-                }
+                    
+                    saveChatSessions();
+                    renderChatHistory();
 
-                if (isFirstMessage) {
-                    const titlePrompt = `Based on the following prompt, create a very short, concise title for this conversation (less than 5 words): "${prompt}"`;
-                    const title = await streamResponse(titlePrompt, modelValue, document.createElement('div')); // Dummy element
-                    if (title) {
-                        currentSession.title = title.replace(/"/g, ''); // Remove quotes
-                        renderChatHistory();
+                    // Handle title generation
+                    if (isFirstMessage) {
+                        const titlePrompt = `Based on the following prompt, create a very short, concise title for this conversation (less than 5 words): "${prompt}"`;
+                        streamResponse(titlePrompt, modelValue, document.createElement('div')).then(title => {
+                             if (title) {
+                                currentSession.title = title.replace(/"/g, '');
+                                saveChatSessions();
+                                renderChatHistory();
+                            }
+                        });
+                    }
+                } else {
+                    // Failure: Revert optimistic UI changes. Don't touch history.
+                    aiMessageElement.parentElement.remove();
+                    if (!isRetry) {
+                        // Find and remove the last message bubble, which is the user's optimistic one
+                        const allBubbles = chatContainer.querySelectorAll('.flex.items-start');
+                        if (allBubbles.length > 0) {
+                            allBubbles[allBubbles.length - 1].remove();
+                        }
                     }
                 }
-                saveChatSessions();
             }
+            // MODIFICATION END
 
             // --- UI Functions ---
             function startNewChat() {
@@ -903,14 +914,11 @@
                 
                 messageWrapper.appendChild(avatar);
 
-                // MODIFICATION: For assistant messages, we now create a new vertical container
-                // that will hold both the message bubble and the action buttons below it.
                 if (role === 'assistant') {
                     const contentContainer = document.createElement('div');
                     contentContainer.appendChild(messageBubble);
                     messageWrapper.appendChild(contentContainer);
                 } else {
-                    // User messages don't have buttons, so no extra container is needed.
                     messageWrapper.appendChild(messageBubble);
                 }
 
@@ -954,14 +962,12 @@
 
                 if (isAssistantMessage) {
                     const actionsContainer = document.createElement('div');
-                    // MODIFICATION: Added margin-top to give space between the bubble and buttons.
                     actionsContainer.className = 'flex justify-end space-x-2 mt-2';
                     
                     const explainoContainer = document.createElement('div');
                     explainoContainer.className = 'relative';
                     
                     const explainoBtn = document.createElement('button');
-                    // MODIFICATION: Changed to 'rounded-md' for a complete, standalone button look.
                     explainoBtn.className = 'bg-gradient-to-b from-[#35142B] to-[#4E1D3F] text-xs text-pink-300 px-3 py-1 rounded-md hover:from-[#4E1D3F] hover:to-[#5A244A] transition-colors';
                     explainoBtn.textContent = 'Explain';
                     
@@ -1029,20 +1035,20 @@
                     retryContainer.className = 'relative';
 
                     const retryBtn = document.createElement('button');
-                    // MODIFICATION: Changed to 'rounded-md' for a complete, standalone button look.
                     retryBtn.className = 'bg-gradient-to-b from-[#35142B] to-[#4E1D3F] text-xs text-pink-300 px-3 py-1 rounded-md hover:from-[#4E1D3F] hover:to-[#5A244A] transition-colors';
                     retryBtn.textContent = 'Retry';
 
                     const retryDropdown = document.createElement('div');
                     retryDropdown.className = 'hidden absolute bottom-full right-0 mb-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 p-1 space-y-1';
 
+                    // MODIFICATION START: Updated retry options and logic
                     const retryOptions = [
-                        { text: 'No changes', modifier: '' },
-                        { text: '...longer', modifier: ' Make the response longer.' },
-                        { text: '...shorter', modifier: ' Make the response shorter.' },
-                        { text: '...less serious', modifier: ' Make the response less serious.' },
-                        { text: '...more serious', modifier: ' Make the response more serious.' },
-                        { text: '...custom', modifier: 'custom' }
+                        { text: 'No changes', prefix: '' },
+                        { text: '...longer', prefix: 'Make the response longer and more detailed. The user\'s prompt was:' },
+                        { text: '...shorter', prefix: 'Make the response shorter and more concise. The user\'s prompt was:' },
+                        { text: '...less serious', prefix: 'Respond in a less serious, more casual tone to the following prompt:' },
+                        { text: '...more serious', prefix: 'Respond in a more serious, formal tone to the following prompt:' },
+                        { text: '...custom', prefix: 'custom' }
                     ];
 
                     retryOptions.forEach(opt => {
@@ -1051,21 +1057,24 @@
                         btn.textContent = opt.text;
                         btn.onclick = () => {
                             const userPrompt = chatSessions.find(s => s.id === currentChatId).messages[index - 1].content;
-                            let modifiedPrompt = userPrompt + opt.modifier;
-                            if (opt.modifier === 'custom') {
-                                const customInput = prompt("Enter custom retry instruction:");
+                            let instruction = opt.prefix;
+
+                            if (instruction === 'custom') {
+                                const customInput = prompt("Enter custom retry instruction (this will be prepended to your original message):");
                                 if (customInput) {
-                                    modifiedPrompt = `${userPrompt} ${customInput}`;
+                                    instruction = `${customInput} The user's original prompt was:`;
                                 } else {
-                                    return;
+                                    return; // User cancelled prompt
                                 }
                             }
-                            element.parentElement.remove(); // Remove old AI response
-                            sendChatMessage(modifiedPrompt, currentModel, true);
+                            
+                            element.parentElement.remove(); // Remove old AI response UI
+                            sendChatMessage(userPrompt, currentModel, true, instruction);
                             retryDropdown.classList.add('hidden');
                         };
                         retryDropdown.appendChild(btn);
                     });
+                    // MODIFICATION END
 
                     retryBtn.onclick = (e) => {
                         e.stopPropagation();
@@ -1076,7 +1085,6 @@
                     retryContainer.appendChild(retryDropdown);
                     actionsContainer.appendChild(retryContainer);
 
-                    // MODIFICATION: Appending to the new contentContainer (element.parentElement)
                     element.parentElement.appendChild(actionsContainer);
                 }
             }            function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
@@ -1267,4 +1275,3 @@
     </script>
 </body>
 </html>
-
