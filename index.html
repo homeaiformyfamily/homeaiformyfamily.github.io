@@ -629,7 +629,12 @@
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    const response = await fetch(`${url}/api/tags`, { method: 'GET', signal: controller.signal });
+                    // MODIFICATION: Added the ngrok-skip-browser-warning header
+                    const response = await fetch(`${url}/api/tags`, { 
+                        method: 'GET', 
+                        headers: { 'ngrok-skip-browser-warning': 'true' },
+                        signal: controller.signal 
+                    });
                     clearTimeout(timeoutId);
                     return response.ok;
                 } catch (error) {
@@ -769,7 +774,11 @@
                     const ngrokUrl = getUrlFromInput(localStorage.getItem(API_URL_KEY));
                     const response = await fetch(`${ngrokUrl}/api/chat`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        // MODIFICATION: Added the ngrok-skip-browser-warning header
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
                         body: JSON.stringify({ model: modelValue, messages, stream: true }),
                         signal: abortController.signal,
                     });
@@ -807,8 +816,7 @@
                     const cursor = targetElement.querySelector('.blinking-cursor');
                     if(cursor) cursor.remove();
                 }
-            }
-            
+            }            
             async function sendChatMessage(prompt, modelValue, isRetry = false) {
                 let currentSession = chatSessions.find(s => s.id === currentChatId);
                 if (!currentSession) return;
