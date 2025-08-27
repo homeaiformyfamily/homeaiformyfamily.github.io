@@ -632,7 +632,7 @@
                     // MODIFICATION: Added the ngrok-skip-browser-warning header
                     const response = await fetch(`${url}/api/tags`, { 
                         method: 'GET', 
-                        headers: { 'ngrok-skip-browser-warning': 'true' },
+                        //headers: { 'ngrok-skip-browser-warning': 'true' },
                         signal: controller.signal 
                     });
                     clearTimeout(timeoutId);
@@ -776,8 +776,8 @@
                         method: 'POST',
                         // MODIFICATION: Added the ngrok-skip-browser-warning header
                         headers: { 
-                            'Content-Type': 'application/json',
-                            'ngrok-skip-browser-warning': 'true'
+                            'Content-Type': 'application/json'
+                            //'ngrok-skip-browser-warning': 'true'
                         },
                         body: JSON.stringify({ model: modelValue, messages, stream: true }),
                         signal: abortController.signal,
@@ -1267,3 +1267,4 @@
     </script>
 </body>
 </html>
+
