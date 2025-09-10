@@ -326,6 +326,13 @@
                     <button id="stop-generation-btn" class="hidden mb-4 mx-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-105">
                         Stop Generation
                     </button>
+                    <div class="flex items-center justify-end mb-2 space-x-2">
+                        <label for="search-toggle" class="text-sm font-medium text-gray-400">Web Search</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="search-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 rounded-full toggle-switch-bg relative peer-checked:bg-pink-600"></div>
+                        </label>
+                    </div>
                     <form id="chat-form" class="relative">
                         <textarea id="chat-input" class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded-xl p-4 pr-16 resize-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-300 shadow-xl" placeholder="Send a message..." rows="1"></textarea>
                         <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-pink-600 hover:bg-pink-700 rounded-full text-white disabled:bg-gray-600 transition-all transform hover:scale-110 disabled:scale-100 disabled:cursor-not-allowed">
@@ -747,7 +754,7 @@
             }
 
             // --- Chat Functions ---
-            async function streamResponse(prompt, modelValue, targetElement) {
+            async function streamResponse(prompt, modelValue, targetElement, chatId = null, chatTitle = 'New Chat', enableSearch = false) {
                 let messages = [{ role: 'user', content: prompt }];
                 
                 abortController = new AbortController();
@@ -758,11 +765,26 @@
                         headers: { 
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ model: modelValue, messages, stream: true }),
+                        body: JSON.stringify({ 
+                            model: modelValue, 
+                            messages, 
+                            stream: true,
+                            chatId: chatId,
+                            chatTitle: chatTitle,
+                            enableSearch: enableSearch
+                        }),
                         signal: abortController.signal,
                     });
 
                     if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
+
+                    let statusElement = targetElement.parentElement.querySelector('.search-status');
+                    if (!statusElement) {
+                        statusElement = document.createElement('p');
+                        statusElement.className = 'search-status text-gray-500 text-sm italic mb-2';
+                        targetElement.parentElement.insertBefore(statusElement, targetElement);
+                    }
+                    statusElement.style.display = 'none';
 
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
@@ -778,14 +800,26 @@
                         for (const line of lines) {
                             try {
                                 const parsed = JSON.parse(line);
-                                if (parsed.message && parsed.message.content) {
-                                    fullResponse += parsed.message.content;
+
+                                if (parsed.type === 'status') {
+                                    statusElement.textContent = parsed.message;
+                                    statusElement.style.display = 'block';
+                                } else if (parsed.type === 'content') {
+                                    fullResponse += parsed.token;
                                     targetElement.innerHTML = marked.parse(fullResponse + '<span class="blinking-cursor"></span>');
                                     scrollToBottom();
+                                } else if (parsed.type === 'title_update') {
+                                    const session = chatSessions.find(s => s.id === chatId);
+                                    if (session) {
+                                        session.title = parsed.newTitle;
+                                        saveChatSessions();
+                                        renderChatHistory();
+                                    }
                                 }
                             } catch (e) { console.error("Stream parse error:", line, e); }
                         }
                     }
+                    statusElement.style.display = 'none';
                     targetElement.innerHTML = marked.parse(fullResponse);
                     return fullResponse;
                 } catch (error) {
@@ -795,19 +829,16 @@
                     const cursor = targetElement.querySelector('.blinking-cursor');
                     if(cursor) cursor.remove();
                 }
-            }            
-            
-            // MODIFICATION START: Updated sendChatMessage function
+            }
             async function sendChatMessage(prompt, modelValue, isRetry = false, retryInstruction = '') {
                 let currentSession = chatSessions.find(s => s.id === currentChatId);
                 if (!currentSession) return;
                 
                 const isFirstMessage = currentSession.messages.length === 0;
 
-                // --- 1. Prepare API payload WITHOUT modifying main state ---
                 let messagesToApi = JSON.parse(JSON.stringify(currentSession.messages));
                 if(isRetry) {
-                    messagesToApi.pop(); // Remove last AI message for the API call
+                    messagesToApi.pop();
                 } else {
                     messagesToApi.push({ role: 'user', content: prompt });
                 }
@@ -822,48 +853,33 @@
                 if (experimentalSettings.personalization) messagesToApi.unshift({ role: 'system', content: experimentalSettings.personalization });
                 if (experimentalSettings.catify) messagesToApi.unshift({ role: 'system', content: 'Respond like a cat. Include meows and purrs.' });
 
-                // --- 2. Update UI optimistically ---
                 welcomeMessage.classList.add('hidden');
-                // The retry onclick handler already removes the old AI bubble from the DOM.
                 if (!isRetry) {
                     addMessageToUI('user', prompt, true, currentSession.messages.length);
                 }
                 const aiMessageElement = addMessageToUI('assistant', ``, true, currentSession.messages.length + (isRetry ? 0 : 1));
                 
-                // --- 3. Stream response ---
                 setLoadingState(true);
-                const finalResponseText = await streamResponse(JSON.stringify(messagesToApi), modelValue, aiMessageElement.querySelector('.prose-styles'));
+
+                const enableSearch = document.getElementById('search-toggle').checked;
+
+                const finalResponseText = await streamResponse(JSON.stringify(messagesToApi), modelValue, aiMessageElement.querySelector('.prose-styles'), currentChatId, currentSession.title, enableSearch);
+                
                 setLoadingState(false);
                 
-                // --- 4. Finalize state based on stream result ---
                 if (finalResponseText) {
-                    // Success: Modify the actual session history now
                     if (isRetry) {
-                        currentSession.messages.pop(); // Remove old AI message from history
+                        currentSession.messages.pop();
                     } else {
-                        currentSession.messages.push({ role: 'user', content: prompt }); // Add new user message to history
+                        currentSession.messages.push({ role: 'user', content: prompt });
                     }
                     currentSession.messages.push({ role: 'assistant', content: finalResponseText });
                     
                     saveChatSessions();
                     renderChatHistory();
-
-                    // Handle title generation
-                    if (isFirstMessage) {
-                        const titlePrompt = `Based on the following prompt, create a very short, concise title for this conversation (less than 5 words): "${prompt}"`;
-                        streamResponse(titlePrompt, modelValue, document.createElement('div')).then(title => {
-                             if (title) {
-                                currentSession.title = title.replace(/"/g, '');
-                                saveChatSessions();
-                                renderChatHistory();
-                            }
-                        });
-                    }
                 } else {
-                    // Failure: Revert optimistic UI changes. Don't touch history.
                     aiMessageElement.parentElement.remove();
                     if (!isRetry) {
-                        // Find and remove the last message bubble, which is the user's optimistic one
                         const allBubbles = chatContainer.querySelectorAll('.flex.items-start');
                         if (allBubbles.length > 0) {
                             allBubbles[allBubbles.length - 1].remove();
@@ -871,7 +887,6 @@
                     }
                 }
             }
-            // MODIFICATION END
 
             // --- UI Functions ---
             function startNewChat() {
